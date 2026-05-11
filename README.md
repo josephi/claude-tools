@@ -22,10 +22,26 @@ commands/   slash command prompts
 mcp/        MCP server definitions referencing ${ENV_VAR} placeholders
 ```
 
+## Pull from the work repo
+
+```bash
+node import.mjs              # pull personal-classified items
+node import.mjs --dry-run    # show what would happen, no writes
+node import.mjs --source <path>  # override source (default: ~/repos/.ai-tools)
+node import.mjs --force      # overwrite adapt items already in pending or live tree
+```
+
+`import.mjs` reads the `tags` frontmatter (`audience/*`, `portable/*`) on every rule, skill, and agent in the source repo:
+
+| Routing | Destination |
+|---|---|
+| `audience/work` | skipped |
+| `audience/personal` or `audience/both` + `portable/verbatim` | copied/overwritten to live tree on every run |
+| `audience/personal` or `audience/both` + `portable/adapt` | dropped into `pending-adaptation/<kind>/<name>` on first import only — manually rewire integrations (Jira → Linear, TFS → GitHub, Slack channels), then move to live tree |
+| `internal: true` | skipped |
+
+Re-running is safe: `verbatim` items track upstream; `adapt` items aren't clobbered once they live anywhere in this repo.
+
 ## Sync
 
 TBD — `sync.mjs` will install into Cursor / Claude Code / Gemini CLI configs the same way the work repo does.
-
-## Pull from the work repo
-
-TBD — `import.mjs` walks the work repo, reads `audience` and `portable` frontmatter, and pulls items classified as personal.
