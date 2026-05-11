@@ -1,0 +1,22 @@
+---
+description: Route all PR reviews through the code-reviewer agent rather than doing ad-hoc reviews in chat. The agent enforces the full review workflow and the right checklist for the stack.
+globs:
+alwaysApply: false
+tags: [audience/personal, portable/verbatim]
+---
+
+# PR reviews go through the code-reviewer agent
+
+When asked to review a PR, delegate to the `code-reviewer` agent. Do not review ad-hoc in chat.
+
+The agent:
+
+- Pulls the PR and changed files
+- Picks the right language checklist (`review-javascript`, `review-dotnet`, `review-sql`, …)
+- Produces the standard severity-graded finding format
+- Posts inline and summary comments
+- DMs the author on Slack
+
+Ad-hoc chat reviews skip these steps and almost always miss findings the checklists catch.
+
+Exception: the user asks specifically for a quick read ("glance at this diff", "sanity-check this change") and doesn't want formal comments posted. In that case, answer in chat and mention the agent exists if they want a full review.

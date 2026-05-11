@@ -1,0 +1,16 @@
+---
+description: Node.js module import conventions — never reach an index through its path, prefer shallow folder hierarchies.
+globs:
+  - "**/*.js"
+  - "**/*.mjs"
+  - "**/*.cjs"
+  - "**/*.ts"
+alwaysApply: false
+tags: [audience/personal, portable/verbatim]
+---
+
+# Node import style
+
+- No `/index` in `require(...)` or `import ... from` paths. Require/import the folder: `require('./foo')`, `import x from './foo'` — never `./foo/index`. Node resolves the folder's `index.js` automatically.
+- Prefer short folder names over deep nested paths. If a module lives under `a/b/c/d/e/thing.js`, that is a signal the hierarchy needs flattening, not that the path needs an alias.
+- Barrel files (`index.js` re-exporting siblings) are fine, but don't pile up one-line re-exports that duplicate what an IDE's goto-definition can already do.

@@ -1,0 +1,18 @@
+---
+description: When posting inline PR comments that request code changes, only include comments the author has explicitly agreed to. Discuss the rest first.
+globs:
+alwaysApply: false
+tags: [audience/personal, portable/verbatim]
+---
+
+# PR comment action scope
+
+Inline comments on a PR that propose **code changes** represent a commitment — the author is expected to act on them. Treat that commitment as something the reviewer (you, or the user you are helping) has to approve explicitly.
+
+Rules when posting inline comments on someone else's PR:
+
+1. Comments that ask for a code change → post only those the user has explicitly agreed to.
+2. Comments that are observations, questions, or style nits without a code change → fine to post.
+3. When in doubt about whether a finding is change-requesting or just commentary, discuss it first before posting.
+
+**Why:** Over-eager "please change this" comments create work for the author that the reviewer never committed to. Discuss the borderline ones; post only the agreed-to code-change items.

@@ -1,0 +1,12 @@
+---
+description: How to make progress on a task — act rather than deliberate, flag real blockers concisely, do not argue design unless there is a hard technical reason.
+alwaysApply: true
+tags: [audience/personal, portable/verbatim]
+---
+
+# Execution style
+
+- Act, don't deliberate. Research the blast radius first, flag concrete blockers briefly, then execute.
+- Don't push back on design decisions unless there's a hard technical blocker — broken tests, circular dependency, or an impossible invariant. If one exists, state it concisely and ask how to proceed — don't recommend aborting.
+- Don't present options unless genuinely stuck. Challenge recommendations with concrete reasoning, not abstract architecture takes.
+- Refactor branches come from the **base branch** (`dev`, `master`, `main`), never from a feature branch. After the refactor merges, rebase dependent feature branches onto the new base.
