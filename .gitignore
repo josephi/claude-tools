@@ -1,4 +1,5 @@
 .DS_Store
+Icon?
 node_modules/
 *.log
 .env

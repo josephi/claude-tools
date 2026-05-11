@@ -75,10 +75,16 @@ async function readFm(path) {
   catch { return {}; }
 }
 
+const SKIP_BASENAMES = new Set(['.DS_Store', 'Icon\r', 'node_modules']);
+function copyFilter(src) {
+  const base = src.split('/').pop();
+  return !SKIP_BASENAMES.has(base);
+}
+
 async function copyItem(srcPath, destPath, isDir) {
   if (DRY) { log(`  [dry-run] ${srcPath} → ${destPath}`); return; }
   await mkdir(dirname(destPath), { recursive: true });
-  await cp(srcPath, destPath, { recursive: isDir, force: true });
+  await cp(srcPath, destPath, { recursive: isDir, force: true, filter: copyFilter });
 }
 
 const stats = { verbatim: 0, adapted: 0, skippedPresent: 0, skippedWork: 0, skippedInternal: 0, skippedUntagged: 0 };
