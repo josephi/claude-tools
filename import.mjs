@@ -25,6 +25,7 @@ import { join, resolve, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { argv, env, exit } from 'node:process';
+import { createHash } from 'node:crypto';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const FLAGS = new Set(argv.slice(2).filter((a) => a.startsWith('--')));
@@ -87,10 +88,42 @@ async function copyItem(srcPath, destPath, isDir) {
   await cp(srcPath, destPath, { recursive: isDir, force: true, filter: copyFilter });
 }
 
-const stats = { verbatim: 0, adapted: 0, skippedPresent: 0, skippedWork: 0, skippedInternal: 0, skippedUntagged: 0 };
+async function hashFile(filePath) {
+  return createHash('sha256').update(await readFile(filePath)).digest('hex');
+}
+
+async function* walkFiles(dir) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
+    if (SKIP_BASENAMES.has(entry.name)) continue;
+    const full = join(dir, entry.name);
+    if (entry.isDirectory()) yield* walkFiles(full);
+    else if (entry.isFile()) yield full;
+  }
+}
+
+async function dirHash(dir) {
+  const items = [];
+  for await (const file of walkFiles(dir)) {
+    items.push({ rel: file.slice(dir.length + 1), hash: await hashFile(file) });
+  }
+  items.sort((a, b) => a.rel.localeCompare(b.rel));
+  return createHash('sha256').update(items.map((i) => `${i.rel}:${i.hash}`).join('\n')).digest('hex');
+}
+
+async function hasDrifted(srcPath, destPath, isDir) {
+  if (!existsSync(destPath)) return true;
+  return isDir
+    ? (await dirHash(srcPath)) !== (await dirHash(destPath))
+    : (await hashFile(srcPath)) !== (await hashFile(destPath));
+}
+
+const stats = {
+  verbatimUpdated: 0, verbatimUnchanged: 0,
+  adaptedNew: 0, adaptedRefreshed: 0, adaptedKeptLive: 0, adaptedKeptPending: 0, adaptedUnchanged: 0,
+  skippedWork: 0, skippedInternal: 0, skippedUntagged: 0,
+};
 
 async function processItem({ kind, name, srcPath, isDir }) {
-  // Decide where to read frontmatter from
   const fmPath = isDir ? join(srcPath, 'SKILL.md') : srcPath;
   if (!existsSync(fmPath)) return;
   const fm = await readFm(fmPath);
@@ -100,32 +133,48 @@ async function processItem({ kind, name, srcPath, isDir }) {
   if (c.skip === 'work')      { stats.skippedWork++;      return; }
   if (c.skip === 'untagged')  { stats.skippedUntagged++;  log(`  warning: ${kind}/${name} has no audience/portable tags`); return; }
 
-  const livePath    = join(HERE, kind, isDir ? name : name);
-  const pendingPath = join(HERE, 'pending-adaptation', kind, isDir ? name : name);
+  const livePath    = join(HERE, kind, name);
+  const pendingPath = join(HERE, 'pending-adaptation', kind, name);
 
   if (c.portable === 'verbatim') {
+    if (!(await hasDrifted(srcPath, livePath, isDir))) {
+      stats.verbatimUnchanged++;
+      return;
+    }
     await copyItem(srcPath, livePath, isDir);
-    stats.verbatim++;
+    stats.verbatimUpdated++;
     log(`  verbatim → ${kind}/${name}`);
     return;
   }
 
   if (c.portable === 'adapt') {
-    const alreadyLive    = existsSync(livePath);
-    const alreadyPending = existsSync(pendingPath);
-    if ((alreadyLive || alreadyPending) && !FORCE) {
-      stats.skippedPresent++;
-      const where = alreadyLive ? 'live tree' : 'pending-adaptation';
-      log(`  keep    ← ${kind}/${name} (already in ${where})`);
+    // Once an adapt item is in the live tree, the user has rewired it — never clobber.
+    if (existsSync(livePath)) {
+      stats.adaptedKeptLive++;
+      if (FORCE) log(`  keep    ← ${kind}/${name} (in live tree; --force does not overwrite adaptations)`);
+      return;
+    }
+    if (existsSync(pendingPath)) {
+      if (!FORCE) {
+        stats.adaptedKeptPending++;
+        log(`  keep    ← ${kind}/${name} (in pending-adaptation; pass --force to refresh)`);
+        return;
+      }
+      if (!(await hasDrifted(srcPath, pendingPath, isDir))) {
+        stats.adaptedUnchanged++;
+        return;
+      }
+      await copyItem(srcPath, pendingPath, isDir);
+      stats.adaptedRefreshed++;
+      log(`  refresh → pending-adaptation/${kind}/${name}`);
       return;
     }
     await copyItem(srcPath, pendingPath, isDir);
-    stats.adapted++;
+    stats.adaptedNew++;
     log(`  adapt   → pending-adaptation/${kind}/${name}`);
     return;
   }
 
-  // portable/none with audience/personal shouldn't happen — flag it.
   log(`  warning: ${kind}/${name} has portable/${c.portable} with audience/${c.audience}`);
 }
 
@@ -179,9 +228,13 @@ log('\nskills:'); await walkSkills();
 log('\nagents:'); await walkAgents();
 
 log('\n── summary ──');
-log(`  verbatim copied:           ${stats.verbatim}`);
-log(`  queued for adaptation:     ${stats.adapted}`);
-log(`  kept (already present):    ${stats.skippedPresent}`);
+log(`  verbatim updated:          ${stats.verbatimUpdated}`);
+log(`  verbatim unchanged:        ${stats.verbatimUnchanged}`);
+log(`  adapt queued (new):        ${stats.adaptedNew}`);
+log(`  adapt refreshed:           ${stats.adaptedRefreshed}`);
+log(`  adapt unchanged:           ${stats.adaptedUnchanged}`);
+log(`  kept (live tree):          ${stats.adaptedKeptLive}`);
+log(`  kept (pending):            ${stats.adaptedKeptPending}`);
 log(`  skipped (work-only):       ${stats.skippedWork}`);
 log(`  skipped (internal):        ${stats.skippedInternal}`);
 if (stats.skippedUntagged) log(`  skipped (untagged):        ${stats.skippedUntagged}`);
