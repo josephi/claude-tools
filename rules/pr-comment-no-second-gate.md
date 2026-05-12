@@ -1,7 +1,5 @@
 ---
 description: When a PR review has been presented, post inline comments and the summary in the same turn — do not ask for a second confirmation after findings are already on screen.
-globs:
-alwaysApply: false
 tags: [audience/personal, portable/verbatim]
 ---
 

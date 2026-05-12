@@ -1,6 +1,5 @@
 ---
 description: How to make progress on a task — act rather than deliberate, flag real blockers concisely, do not argue design unless there is a hard technical reason.
-alwaysApply: true
 tags: [audience/personal, portable/verbatim]
 ---
 

@@ -1,7 +1,5 @@
 ---
 description: When posting inline PR comments that request code changes, only include comments the author has explicitly agreed to. Discuss the rest first.
-globs:
-alwaysApply: false
 tags: [audience/personal, portable/verbatim]
 ---
 

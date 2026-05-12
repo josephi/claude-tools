@@ -182,7 +182,8 @@ async function walkRules() {
   const dir = join(SOURCE, 'rules');
   if (!existsSync(dir)) return;
   for (const entry of await readdir(dir, { withFileTypes: true })) {
-    if (!entry.isFile() || !entry.name.endsWith('.mdc')) continue;
+    if (!entry.isFile() || !entry.name.endsWith('.md')) continue;
+    if (entry.name === 'README.md') continue;
     await processItem({
       kind: 'rules',
       name: entry.name,

@@ -1,7 +1,5 @@
 ---
 description: Route all PR reviews through the code-reviewer agent rather than doing ad-hoc reviews in chat. The agent enforces the full review workflow and the right checklist for the stack.
-globs:
-alwaysApply: false
 tags: [audience/personal, portable/verbatim]
 ---
 

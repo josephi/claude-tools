@@ -1,6 +1,4 @@
 ---
-alwaysApply: false
-globs: ["**/*.spec.js", "**/tests/**/*.js"] 
 description: Guidelines for writing tests - mocking strategy and code style
 tags: [audience/personal, portable/verbatim]
 ---

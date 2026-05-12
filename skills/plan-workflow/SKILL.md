@@ -43,4 +43,4 @@ Call `ExitPlanMode` when the plan file is ready. The turn ends with either `AskU
 
 ## Post-approval
 
-Once the user approves, start executing immediately. Track tasks with `TaskCreate`. Follow `rules/execution-style.mdc`: act, don't re-deliberate.
+Once the user approves, start executing immediately. Track tasks with `TaskCreate`. Follow the `execution-style` rule: act, don't re-deliberate.

@@ -1,7 +1,5 @@
 ---
 description: Principles for writing logs — when to log, how to format messages, how to choose levels, and how to use metadata. Language-agnostic.
-globs:
-alwaysApply: false
 tags: [audience/personal, portable/verbatim]
 ---
 

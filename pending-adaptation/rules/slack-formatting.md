@@ -1,7 +1,5 @@
 ---
 description: Tipalti Slack conventions — canonical PR-announcement template, verified-emoji list, channel targeting, send vs draft.
-globs:
-alwaysApply: false
 tags: [audience/personal, portable/adapt]
 ---
 

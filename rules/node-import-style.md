@@ -1,11 +1,9 @@
 ---
 description: Node.js module import conventions — never reach an index through its path, prefer shallow folder hierarchies.
-globs:
   - "**/*.js"
   - "**/*.mjs"
   - "**/*.cjs"
   - "**/*.ts"
-alwaysApply: false
 tags: [audience/personal, portable/verbatim]
 ---
 
