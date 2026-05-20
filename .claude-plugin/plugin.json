@@ -1,0 +1,10 @@
+{
+  "name": "claude-tools",
+  "description": "Personal rules, skills, and agents for everyday development — execution style, git flow, GitHub Issues, PR review, testing, logging, and more.",
+  "version": "1.0.0",
+  "author": {
+    "name": "josephi",
+    "url": "https://github.com/josephi"
+  },
+  "homepage": "https://github.com/josephi/claude-tools"
+}
