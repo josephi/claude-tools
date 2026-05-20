@@ -117,9 +117,18 @@ async function hasDrifted(srcPath, destPath, isDir) {
     : (await hashFile(srcPath)) !== (await hashFile(destPath));
 }
 
+// Adapt items renamed in the live tree. The importer can't infer renames from
+// frontmatter; without this map it would re-queue the upstream original into
+// pending-adaptation/ every run. Keys are source-side `<kind>/<name>`.
+const RENAMED_ADAPTATIONS = {
+  'rules/slack-formatting.md':        'rules/chat-formatting.md',
+  'skills/jira':                      'skills/github-issues',
+  'skills/syncapp-git-conventions':   'skills/git-conventions',
+};
+
 const stats = {
   verbatimUpdated: 0, verbatimUnchanged: 0,
-  adaptedNew: 0, adaptedRefreshed: 0, adaptedKeptLive: 0, adaptedKeptPending: 0, adaptedUnchanged: 0,
+  adaptedNew: 0, adaptedRefreshed: 0, adaptedKeptLive: 0, adaptedKeptPending: 0, adaptedUnchanged: 0, adaptedRenamed: 0,
   skippedWork: 0, skippedInternal: 0, skippedUntagged: 0,
 };
 
@@ -148,6 +157,17 @@ async function processItem({ kind, name, srcPath, isDir }) {
   }
 
   if (c.portable === 'adapt') {
+    // If the live tree has a renamed counterpart, treat it as adapted and skip.
+    const renameKey = `${kind}/${name}`;
+    const renamedTo = RENAMED_ADAPTATIONS[renameKey];
+    if (renamedTo) {
+      const renamedLive = join(HERE, renamedTo);
+      if (existsSync(renamedLive)) {
+        stats.adaptedRenamed++;
+        if (FORCE) log(`  rename  ← ${renameKey} → ${renamedTo} (in live tree)`);
+        return;
+      }
+    }
     // Once an adapt item is in the live tree, the user has rewired it — never clobber.
     if (existsSync(livePath)) {
       stats.adaptedKeptLive++;
@@ -235,6 +255,7 @@ log(`  adapt queued (new):        ${stats.adaptedNew}`);
 log(`  adapt refreshed:           ${stats.adaptedRefreshed}`);
 log(`  adapt unchanged:           ${stats.adaptedUnchanged}`);
 log(`  kept (live tree):          ${stats.adaptedKeptLive}`);
+log(`  kept (renamed in live):    ${stats.adaptedRenamed}`);
 log(`  kept (pending):            ${stats.adaptedKeptPending}`);
 log(`  skipped (work-only):       ${stats.skippedWork}`);
 log(`  skipped (internal):        ${stats.skippedInternal}`);
