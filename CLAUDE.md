@@ -9,7 +9,6 @@ Managed in [josephi/claude-tools](https://github.com/josephi/claude-tools).
 
 ## build-tests-principles
 
-
 When writing tests follow those rules:
 * Keep the original file style/structure; minimal edits to existing tests.
 * Do not use proxyquire; load real modules normally.
@@ -22,7 +21,6 @@ When writing tests follow those rules:
 * Keep assertions concise: verify key inputs/outputs, order, and side effects without heavy mocking.
 
 ## chat-formatting
-
 
 # Chat formatting
 
@@ -94,7 +92,6 @@ See the `deslop` rule for general prose quality. Specifically for chat:
 
 ## execution-style
 
-
 # Execution style
 
 - Act, don't deliberate. Research the blast radius first, flag concrete blockers briefly, then execute.
@@ -103,7 +100,6 @@ See the `deslop` rule for general prose quality. Specifically for chat:
 - Refactor branches come from the **base branch** (`dev`, `master`, `main`), never from a feature branch. After the refactor merges, rebase dependent feature branches onto the new base.
 
 ## git-per-task
-
 
 # Git per task
 
@@ -136,7 +132,6 @@ The `!` prefix runs the command at the user level and pipes the output back into
 Never make direct edits on `dev`, `master`, or `main`. Always work from a task branch.
 
 ## log-standards
-
 
 # Log Standards
 
@@ -205,7 +200,6 @@ One log line per batch, not one per item.
 
 ## node-import-style
 
-
 # Node import style
 
 - No `/index` in `require(...)` or `import ... from` paths. Require/import the folder: `require('./foo')`, `import x from './foo'` — never `./foo/index`. Node resolves the folder's `index.js` automatically.
@@ -213,7 +207,6 @@ One log line per batch, not one per item.
 - Barrel files (`index.js` re-exporting siblings) are fine, but don't pile up one-line re-exports that duplicate what an IDE's goto-definition can already do.
 
 ## pr-comment-action-scope
-
 
 # PR comment action scope
 
@@ -229,7 +222,6 @@ Rules when posting inline comments on someone else's PR:
 
 ## pr-comment-no-second-gate
 
-
 # PR comments — no second gate
 
 When reviewing a PR (via the `code-reviewer` agent or otherwise):
@@ -243,8 +235,50 @@ Exception: the user says up front "draft only", "show me first", or "don't post 
 
 **Why:** After a review is generated, the next expected action is to post it. Rechecking intent every time is a wasted gate and trains the user to type "yes" without thinking.
 
-## pr-review-via-agent
+## pr-labels
 
+# PR labels
+
+Every PR needs at least two labels applied at creation time.
+
+## Type label
+
+Mirrors the Conventional Commit type in the PR title:
+
+| Commit type | Label |
+|---|---|
+| `feat` | `feat` |
+| `fix` | `fix` |
+| `chore` / `refactor` | `chore` |
+| `infra` | `infra` |
+| `test` | `test` |
+| `docs` | `docs` |
+| `perf` | `perf` |
+| `security` | `security` |
+
+Domain labels (`backend`, `frontend`, `dx`, `security`) can be added alongside the type label when they help filtering.
+
+Size labels (`size:XS`, `size:S`, `size:M`, `size:L`) match the issue size estimate and go on PRs too.
+
+## Project label
+
+When the PR is part of a named initiative (multi-milestone refactor, quarterly project, product launch), apply a dedicated initiative label in addition to the type label. Name it after the initiative — e.g. `v3-refactor`, `auth-overhaul`, `q2-perf`. Use a distinct color (purple works well) so it stands out in the PR list.
+
+Create the label once at initiative kick-off: `gh label create "v3-refactor" --color "7928CA" --description "Part of the v3 production refactor"`.
+
+Apply it to every PR opened under that initiative, including fix PRs and chores. The label is the filter that lets you answer "show me all open PRs for this initiative" in one click.
+
+## When to apply
+
+Apply labels at `gh pr create` time — not after. Retroactively labelling a batch of PRs is tedious and error-prone. If using an agent to create PRs, include the `--label` flag in the `gh pr create` command.
+
+## What not to do
+
+- Don't use PR title prefixes as a substitute for labels — they don't filter.
+- Don't create one label per milestone — one initiative label covers the whole initiative.
+- Don't rely on assignees for initiative tracking — labels are queryable; assignees are not.
+
+## pr-review-via-agent
 
 # PR reviews go through the code-reviewer agent
 
@@ -262,8 +296,27 @@ Ad-hoc chat reviews skip these steps and almost always miss findings the checkli
 
 Exception: the user asks specifically for a quick read ("glance at this diff", "sanity-check this change") and doesn't want formal comments posted. In that case, answer in chat and mention the agent exists if they want a full review.
 
-## prior-art-first
+## Standalone vs integration PRs
 
+Every PR is either **standalone** (merges independently) or **integration** (part of a coordinated multi-milestone refactor where several PRs land together into an integration branch).
+
+**For standalone PRs**: pass nothing extra — the agent reviews in full isolation. "X doesn't exist" is a critical.
+
+**For integration PRs**: pass the integration context in the agent prompt so it can distinguish real bugs from planned gaps:
+
+```
+STANDALONE: no
+BUNDLE MATES: <list other PRs that merge in the same window>
+PRECEDING MILESTONES: <what already exists when this PR lands>
+INTENTIONALLY ABSENT: <things that arrive in later milestones>
+TARGET BRANCH: <integration branch, e.g. refactor>
+```
+
+Without this context, the agent flags design decisions as criticals and generates noise. With it, it focuses on genuine bugs (SQL injection, wrong library API, build failures) rather than gaps that are resolved by bundle mates or later milestones.
+
+After the review, resolve GitHub comment threads reclassified as design decisions — they clutter the PR and mislead future reviewers.
+
+## prior-art-first
 
 # Prior art first
 
@@ -289,4 +342,3 @@ When a task involves resolving a mapping, looking up a tenant-specific path, par
 - Don't grep the function name you'd hypothetically use (`getThingByName`) — that's the name *you'd* write. Grep the *concept* (the field/path/operation being resolved).
 - Don't conclude "no prior art" after one failed grep. Try two or three keyword variations.
 - Don't reimplement just because the existing version is in a slightly different style. Match the style, propose a refactor as a follow-up.
-
