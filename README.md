@@ -29,8 +29,10 @@ Or add directly to `~/.claude-personal/plugins/known_marketplaces.json`:
 | Type | Count | Examples |
 |---|---|---|
 | Rules | 10 | execution-style, git-per-task, log-standards, prior-art-first |
-| Skills | 13 | github-issues, git-conventions, deslop, review-javascript, plan-workflow |
+| Skills | 18 | github-issues, github-context, gcloud-auth, chrome-debug, deploy-status, personal-projects |
 | Agents | 6 | code-reviewer, senior-developer, solution-architect, qa-automation |
+| MCP servers | 1 | chrome-devtools (`.mcp.json`) |
+| Bin helpers | 2 | `project-key`, `project-cfg` |
 
 ### Personal-flow conventions
 
@@ -51,11 +53,39 @@ rules/              source rule files (frontmatter + body)
 skills/<name>/      SKILL.md + optional references/ and scripts/
 agents/             persona .md files
 commands/           slash command prompts (placeholder)
-mcp/                MCP server definitions (placeholder)
+bin/                shell helpers installed to ~/bin (project-key, project-cfg)
 pending-adaptation/ staging area for items pulled from the work repo
 CLAUDE.md           compiled plugin context (generated from rules/)
 .claude-plugin/     plugin manifest (plugin.json)
+.mcp.json           MCP servers shipped by the plugin
 ```
+
+## Per-project context — `~/.claude-personal/settings.local.json`
+
+Several skills (`personal-projects`, `github-context`, `gcloud-auth`, `chrome-debug`, `deploy-status`) share a project registry under the `projects` key. One entry per project, keyed by short slug:
+
+```jsonc
+{
+  "projects": {
+    "<key>": {
+      "match":       ["<repo-basename-glob>", ...],
+      "displayName": "Human-readable name",
+      "gcloud":      { "projectId", "account", "region", "zone", "billingAccount", "orgId" },
+      "github":      { "owner", "repo", "nameWithOwner", "defaultBranch", "developmentBranch",
+                       "authAccount", "authHost", "protectedBranches", "prTargetBranch" },
+      "chrome":      { "profile", "wrapper", "accountEmail" },
+      "app":         { "localUrl", "stagingUrl", "prodUrl", "healthPath", "healthCheck" },
+      "deploy":      { "platform", "prod": {...}, "staging": {...} },
+      "supabase":    { "projectRef", "url", "jwksUrl", "anonKey", "secrets": {...} }
+    }
+  }
+}
+```
+
+- **Writer:** `personal-projects` skill — add, list, show, validate, update.
+- **Readers:** the rest. Resolution goes through two shell helpers in `bin/` (installed to `~/bin/`):
+  - `project-key` — cwd basename → matching key (exact, then `match[]` globs).
+  - `project-cfg <key> <topic> [<field>…]` — read any value (scalars raw, arrays space-joined, objects pretty JSON).
 
 ## Maintaining rules
 

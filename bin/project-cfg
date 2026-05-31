@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+# Read a value from projects.<key>.<topic>[.<field>...] in settings.local.json.
+#
+# Usage:
+#   project-cfg <key> <topic> [<field> ...]
+#   project-cfg aclim gcloud projectId        # → refreshing-well-496818-u3
+#   project-cfg aclim github protectedBranches # → main (space-joined list)
+#   project-cfg aclim chrome                  # → JSON object (for piping)
+#
+# Tilde paths are NOT expanded — callers do `eval echo "$value"` if needed.
+
+set -euo pipefail
+
+CFG="${PROJECTS_CFG:-$HOME/.claude-personal/settings.local.json}"
+if [ $# -lt 2 ]; then
+  echo "usage: project-cfg <key> <topic> [<field> ...]" >&2
+  exit 2
+fi
+
+python3 - "$CFG" "$@" <<'PY'
+import json, os, sys
+cfg = json.load(open(sys.argv[1]))
+v = cfg.get("projects", {})
+for k in sys.argv[2:]:
+    if not isinstance(v, dict) or k not in v:
+        sys.exit(f"project-cfg: missing key path: {'.'.join(sys.argv[2:])}")
+    v = v[k]
+if isinstance(v, list):
+    print(" ".join(str(x) for x in v))
+elif isinstance(v, (dict,)):
+    print(json.dumps(v, indent=2))
+else:
+    print(v)
+PY
