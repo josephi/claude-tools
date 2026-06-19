@@ -51,6 +51,14 @@ If the current directory is a worktree (not the main checkout):
 1. Run `node ~/.claude/skills/worktree-manager/scripts/manage.mjs init` — runs `npm run init-worktree` if dependencies aren't linked. **Always run this — don't just remind the user.**
 2. The directory rename has to happen from the **main checkout** because `git worktree move` cannot rename the dir you're standing in. Tell the user: *"your worktree dir is `<old>`; run worktree-manager from the main checkout to rename to `<expected>` and sync the workspace file"*. Don't try to rename from inside the worktree.
 
+### After renaming a worktree
+
+When `rename` (or `all`) successfully renames a worktree dir, **print the new dir name to the user and suggest renaming the Claude Code session to match**. Example:
+
+> Renamed to `chore__sync-26726_clean-unused-deps`. Suggest renaming this Claude session to the same name (`/rename chore__sync-26726_clean-unused-deps`) so the session list stays aligned with the worktree.
+
+Why: the session label otherwise still shows the old agent-generated adjective name (e.g. `cosmic-zooming-bubble`), which makes it hard to find the right session later. Emit the nudge every time, not just the first.
+
 ### From `task-completion` (after the PR merges)
 
 Suggest `prune-merged --apply` from the main checkout to drop merged worktrees and their branches. Don't run it without confirmation — the user may want to keep some for reference.

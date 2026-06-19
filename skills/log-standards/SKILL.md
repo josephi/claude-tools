@@ -1,9 +1,11 @@
 ---
-description: Principles for writing logs — when to log, how to format messages, how to choose levels, and how to use metadata. Language-agnostic.
+name: log-standards
+description: Principles for writing log lines — when to log (major process boundaries + failures, not trivial successes or hot loops), how to format messages (static lowercase identifiers, no interpolation, no raw errors), how to pick levels (fatal/error/warn/info/verbose/debug), and how to put dynamic context in structured metadata. Language-agnostic. TRIGGER when adding, modifying, or reviewing a `logger.info`/`logger.warn`/`logger.error` call, when deciding what to log, or when reviewing log statements in a PR. SKIP for non-log code, config-only edits, or pure documentation.
+model: sonnet
 tags: [audience/personal, portable/verbatim]
 ---
 
-# Log Standards
+# Log standards
 
 Principles for writing logs that are useful for debugging, operable for oncall, and cheap to index.
 

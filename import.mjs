@@ -122,12 +122,25 @@ async function hasDrifted(srcPath, destPath, isDir) {
 // pending-adaptation/ every run. Keys are source-side `<kind>/<name>`.
 const RENAMED_ADAPTATIONS = {
   'rules/slack-formatting.md':        'rules/chat-formatting.md',
+  'skills/slack-formatting':          'rules/chat-formatting.md',
   'skills/jira':                      'skills/github-issues',
   'skills/syncapp-git-conventions':   'skills/git-conventions',
 };
 
+// Verbatim items the personal tree has locally diverged from. Upstream tags
+// them portable/verbatim, but here they carry personal-flow edits that a
+// verbatim copy would clobber. We skip the overwrite and only warn when
+// upstream drifts, so the divergence can be re-merged by hand. Keys are
+// source-side `<kind>/<name>`.
+//   - rules/pr-review-via-agent.md : personal-only "Standalone vs integration" section
+//   - skills/plan-workflow         : Jira handoff paragraph rewritten for GitHub Issues
+const PROTECTED_LOCAL = new Set([
+  'rules/pr-review-via-agent.md',
+  'skills/plan-workflow',
+]);
+
 const stats = {
-  verbatimUpdated: 0, verbatimUnchanged: 0,
+  verbatimUpdated: 0, verbatimUnchanged: 0, verbatimProtected: 0, verbatimProtectedDrift: 0,
   adaptedNew: 0, adaptedRefreshed: 0, adaptedKeptLive: 0, adaptedKeptPending: 0, adaptedUnchanged: 0, adaptedRenamed: 0,
   skippedWork: 0, skippedInternal: 0, skippedUntagged: 0,
 };
@@ -146,6 +159,15 @@ async function processItem({ kind, name, srcPath, isDir }) {
   const pendingPath = join(HERE, 'pending-adaptation', kind, name);
 
   if (c.portable === 'verbatim') {
+    if (PROTECTED_LOCAL.has(`${kind}/${name}`)) {
+      if (await hasDrifted(srcPath, livePath, isDir)) {
+        stats.verbatimProtectedDrift++;
+        log(`  protect ← ${kind}/${name} (locally adapted; upstream drifted — re-merge by hand)`);
+      } else {
+        stats.verbatimProtected++;
+      }
+      return;
+    }
     if (!(await hasDrifted(srcPath, livePath, isDir))) {
       stats.verbatimUnchanged++;
       return;
@@ -251,6 +273,8 @@ log('\nagents:'); await walkAgents();
 log('\n── summary ──');
 log(`  verbatim updated:          ${stats.verbatimUpdated}`);
 log(`  verbatim unchanged:        ${stats.verbatimUnchanged}`);
+log(`  verbatim protected:        ${stats.verbatimProtected}`);
+if (stats.verbatimProtectedDrift) log(`  protected (upstream drift): ${stats.verbatimProtectedDrift}`);
 log(`  adapt queued (new):        ${stats.adaptedNew}`);
 log(`  adapt refreshed:           ${stats.adaptedRefreshed}`);
 log(`  adapt unchanged:           ${stats.adaptedUnchanged}`);

@@ -28,8 +28,8 @@ Or add directly to `~/.claude-personal/plugins/known_marketplaces.json`:
 
 | Type | Count | Examples |
 |---|---|---|
-| Rules | 10 | execution-style, git-per-task, log-standards, prior-art-first |
-| Skills | 13 | github-issues, git-conventions, deslop, review-javascript, plan-workflow |
+| Rules | 10 | execution-style, git-per-task, pr-labels, prior-art-first |
+| Skills | 14 | github-issues, git-conventions, deslop, log-standards, plan-workflow |
 | Agents | 6 | code-reviewer, senior-developer, solution-architect, qa-automation |
 
 ### Personal-flow conventions
@@ -91,5 +91,13 @@ Actual location on this machine: `~/repos/sync-group-tools/ai-tools/`.
 ### Known renames (import.mjs `RENAMED_ADAPTATIONS`)
 
 - `rules/slack-formatting.md` → `rules/chat-formatting.md`
+- `skills/slack-formatting` → `rules/chat-formatting.md` (upstream promoted the rule to a skill; here it stays a rule)
 - `skills/jira` → `skills/github-issues`
 - `skills/syncapp-git-conventions` → `skills/git-conventions`
+
+### Locally adapted verbatim items (import.mjs `PROTECTED_LOCAL`)
+
+Verbatim upstream items that carry personal-flow edits here. The importer never overwrites them; it warns when upstream drifts so the change can be re-merged by hand.
+
+- `rules/pr-review-via-agent.md` — keeps the personal "Standalone vs integration" section
+- `skills/plan-workflow` — Jira handoff paragraph rewritten for GitHub Issues
