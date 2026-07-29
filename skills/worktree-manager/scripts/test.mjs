@@ -161,6 +161,28 @@ async function main() {
         assert.ok(!existsSync(join(mainRepo, '.claude', 'worktrees', 'feature__test-100_one')));
     });
 
+    await step('prune-merged --base honors a comma-separated list (merged into ANY base)', () => {
+        // A worktree whose branch is merged into `master` only, not `dev`.
+        git(mainRepo, 'branch master dev');
+        const wt4 = join(mainRepo, '.claude', 'worktrees', 'feat-on-master');
+        git(mainRepo, `worktree add -b feature/test-300_three "${wt4}"`);
+        git(wt4, 'commit --allow-empty -m "three work"');
+        git(mainRepo, 'checkout master');
+        git(mainRepo, 'merge --no-ff feature/test-300_three -m merge-300');
+        git(mainRepo, 'checkout dev');
+
+        // base=dev only → not merged into dev → not pruned.
+        const devOnly = manage(mainRepo, 'prune-merged');
+        const e1 = devOnly.find((r) => r.branch === 'feature/test-300_three');
+        assert.ok(e1 && e1.status === 'not-merged', `expected not-merged for dev-only, got: ${JSON.stringify(e1)}`);
+
+        // base=dev,master → merged into master → would-prune, base reported.
+        const multi = manage(mainRepo, 'prune-merged --base dev,master');
+        const e2 = multi.find((r) => r.branch === 'feature/test-300_three');
+        assert.ok(e2 && e2.status === 'would-prune', `expected would-prune for multi-base, got: ${JSON.stringify(e2)}`);
+        assert.equal(e2.base, 'master');
+    });
+
     await step('gitignore appended once', async () => {
         manage(mainRepo, 'sync-workspace');
         manage(mainRepo, 'sync-workspace');

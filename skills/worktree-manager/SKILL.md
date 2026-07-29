@@ -132,8 +132,10 @@ manage.mjs init [--worktree <path>]
 manage.mjs find-task <task-id>
   → returns the worktree for this task id, or { found: false }
 
-manage.mjs prune-merged [--base <branch>] [--apply]
-  → list (or remove with --apply) worktrees whose branch is merged into base (default: dev)
+manage.mjs prune-merged [--base <branch[,branch...]>] [--apply]
+  → list (or remove with --apply) worktrees whose branch is merged into ANY of the
+    given bases. --base accepts a single branch or a comma-separated list
+    (e.g. --base dev,master). Default: dev.
 
 manage.mjs all
   → rename (if in main) + init (if in worktree) + sync-workspace

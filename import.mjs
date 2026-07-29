@@ -125,6 +125,7 @@ const RENAMED_ADAPTATIONS = {
   'skills/slack-formatting':          'rules/chat-formatting.md',
   'skills/jira':                      'skills/github-issues',
   'skills/syncapp-git-conventions':   'skills/git-conventions',
+  'skills/slack-nontechnical':        'skills/chat-nontechnical',
 };
 
 // Verbatim items the personal tree has locally diverged from. Upstream tags

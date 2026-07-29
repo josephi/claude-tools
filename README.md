@@ -28,8 +28,8 @@ Or add directly to `~/.claude-personal/plugins/known_marketplaces.json`:
 
 | Type | Count | Examples |
 |---|---|---|
-| Rules | 10 | execution-style, git-per-task, pr-labels, prior-art-first |
-| Skills | 14 | github-issues, git-conventions, deslop, log-standards, plan-workflow |
+| Rules | 11 | execution-style, git-per-task, pr-labels, prior-art-first |
+| Skills | 18 | github-issues, git-conventions, deslop, log-standards, plan-workflow |
 | Agents | 6 | code-reviewer, senior-developer, solution-architect, qa-automation |
 
 ### Personal-flow conventions

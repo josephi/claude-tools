@@ -274,27 +274,31 @@ function findTask(taskId) {
     return scan().find((wt) => wt.taskId === target) || null;
 }
 
+// `base` may be a single branch or a comma-separated list ("dev,master,main").
+// A worktree is pruned if its branch is merged into ANY of the listed bases.
 function pruneMerged(base, apply) {
     const wts = listWorktrees();
     const main = findMain(wts);
     const mainPath = main.path;
-    const baseRef = base || 'dev';
+    const bases = String(base || 'dev').split(',').map((b) => b.trim()).filter(Boolean);
 
     const results = [];
     for (const wt of wts) {
         if (wt.path === mainPath) continue;
         if (!wt.branch) { results.push({ path: wt.path, status: 'skip-detached' }); continue; }
-        let merged = false;
-        try {
-            const out = git(`-C "${mainPath}" branch --merged ${baseRef} --list "${wt.branch}"`);
-            merged = out.trim().length > 0;
-        } catch { /* base may not exist locally */ }
-        if (!merged) { results.push({ path: wt.path, branch: wt.branch, status: 'not-merged' }); continue; }
-        if (!apply) { results.push({ path: wt.path, branch: wt.branch, status: 'would-prune' }); continue; }
+        let mergedInto = null;
+        for (const baseRef of bases) {
+            try {
+                const out = git(`-C "${mainPath}" branch --merged ${baseRef} --list "${wt.branch}"`);
+                if (out.trim().length > 0) { mergedInto = baseRef; break; }
+            } catch { /* base may not exist locally — try the next one */ }
+        }
+        if (!mergedInto) { results.push({ path: wt.path, branch: wt.branch, status: 'not-merged' }); continue; }
+        if (!apply) { results.push({ path: wt.path, branch: wt.branch, base: mergedInto, status: 'would-prune' }); continue; }
         try {
             git(`-C "${mainPath}" worktree remove --force "${wt.path}"`);
             git(`-C "${mainPath}" branch -D "${wt.branch}"`);
-            results.push({ path: wt.path, branch: wt.branch, status: 'pruned' });
+            results.push({ path: wt.path, branch: wt.branch, base: mergedInto, status: 'pruned' });
         } catch (e) {
             results.push({ path: wt.path, branch: wt.branch, status: 'error', error: e.message });
         }
