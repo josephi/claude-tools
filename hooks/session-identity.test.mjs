@@ -203,18 +203,18 @@ step('SessionStart after a compact does not repeat the base-branch warning', () 
   assert.ok(!out?.systemMessage);
 });
 
-step('CLAUDE_TOOLS_NO_TAB_TITLE=1 suppresses the tab title', () => {
-  process.env.CLAUDE_TOOLS_NO_TAB_TITLE = '1';
+step('BENCH_NO_TAB_TITLE=1 suppresses the tab title', () => {
+  process.env.BENCH_NO_TAB_TITLE = '1';
   try {
     assert.equal(handleSessionStart({ source: 'startup' }, CTX).terminalSequence, undefined);
   } finally {
-    delete process.env.CLAUDE_TOOLS_NO_TAB_TITLE;
+    delete process.env.BENCH_NO_TAB_TITLE;
   }
 });
 
 step('branch change emits banner plus tab title', () => {
   const out = handleBranchChange(CTX);
-  assert.match(out.systemMessage, /claude-tools/);
+  assert.match(out.systemMessage, /bench/);
   assert.match(out.terminalSequence, /^\x1b\]0;/);
 });
 
@@ -229,7 +229,7 @@ console.log('\ntask-context — against real git repos');
 const G = (args, cwd) => execFileSync('git', args, { cwd, stdio: ['ignore', 'pipe', 'pipe'], encoding: 'utf8' });
 
 async function makeRepo() {
-  const dir = await mkdtemp(join(tmpdir(), 'claude-tools-ctx-'));
+  const dir = await mkdtemp(join(tmpdir(), 'bench-ctx-'));
   const origin = join(dir, 'origin.git');
   const work = join(dir, 'work');
   await mkdir(origin, { recursive: true });
@@ -307,7 +307,7 @@ try {
     assert.equal(unpushedCount(work), 1);
   });
 
-  const cfgDir = mkdtempSync(join(tmpdir(), 'claude-tools-cfg-'));
+  const cfgDir = mkdtempSync(join(tmpdir(), 'bench-cfg-'));
   const cfg = join(cfgDir, 'settings.local.json');
   const writeRegistry = (projects) => {
     writeFileSync(cfg, JSON.stringify({ projects }));
@@ -353,7 +353,7 @@ try {
   });
 
   step('non-repo directory yields null context', () => {
-    const plain = mkdtempSync(join(tmpdir(), 'claude-tools-plain-'));
+    const plain = mkdtempSync(join(tmpdir(), 'bench-plain-'));
     repos.push(plain);
     assert.equal(taskContext(plain), null);
     assert.equal(currentBranch(plain), null);
@@ -378,7 +378,7 @@ try {
 
   step('branch-change Bash call emits the banner', () => {
     const res = run({ hook_event_name: 'PostToolUse', ...bash('git switch master') }, work);
-    assert.match(res.systemMessage, /claude-tools/);
+    assert.match(res.systemMessage, /bench/);
   });
 
   step('unrelated Bash call is silent', () => {
@@ -388,7 +388,7 @@ try {
   // isBranchChange is a pure regex; context resolution must stay behind it, or
   // every Bash call pays for git subprocesses it does not need.
   step('a non-branch-change Bash call spawns no git at all', () => {
-    const shim = mkdtempSync(join(tmpdir(), 'claude-tools-shim-'));
+    const shim = mkdtempSync(join(tmpdir(), 'bench-shim-'));
     repos.push(shim);
     const log = join(shim, 'log');
     writeFileSync(join(shim, 'git'), `#!/bin/sh\necho "$*" >> "${log}"\nexec /usr/bin/git "$@"\n`);

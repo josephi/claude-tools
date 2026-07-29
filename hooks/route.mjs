@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // UserPromptSubmit hook. Matches the submitted prompt against hooks/routing.json
-// and injects a directive naming the claude-tools skill or agent that should handle
+// and injects a directive naming the bench skill or agent that should handle
 // it.
 //
-// Why this exists: the claude-tools-tools-first rule lives in ~/.claude/CLAUDE.md,
+// Why this exists: the bench-tools-first rule lives in ~/.claude/CLAUDE.md,
 // the lowest-salience position in the context window, competing with ~40 skill
 // descriptions. UserPromptSubmit additionalContext lands *alongside the
 // submitted prompt* instead, and only when a route actually matches — so it is
@@ -20,7 +20,7 @@ import { argv, env, stdin, stdout, exit } from 'node:process';
 import { findIssueRefs } from './lib/issue-ref.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const TABLE_PATH = env.CLAUDE_TOOLS_ROUTING_TABLE?.trim() || join(HERE, 'routing.json');
+const TABLE_PATH = env.BENCH_ROUTING_TABLE?.trim() || join(HERE, 'routing.json');
 
 export function loadTable(path = TABLE_PATH) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -73,8 +73,8 @@ export function renderContext(hits) {
   if (hits.length === 0) return null;
 
   const header = hits.length === 1
-    ? 'claude-tools routing — a specialized tool covers this prompt:'
-    : 'claude-tools routing — specialized tools cover this prompt:';
+    ? 'bench routing — a specialized tool covers this prompt:'
+    : 'bench routing — specialized tools cover this prompt:';
 
   const body = hits
     .map((h) => `- ${h.target}\n  ${h.message}`)

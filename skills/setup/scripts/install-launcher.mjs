@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-// Installs a small, stable launcher at CONFIG_DIR/claude-tools-statusline.mjs.
+// Installs a small, stable launcher at CONFIG_DIR/bench-statusline.mjs.
 //
 // The plugin cache is version-namespaced
-// (plugins/cache/<marketplace>/claude-tools/<version>/), so pointing `statusLine` at
+// (plugins/cache/<marketplace>/bench/<version>/), so pointing `statusLine` at
 // it directly bakes a version into the user's settings and the statusline breaks
 // on the next update. Setup rewriting the path each time is a treadmill, and it
 // only works if the user runs setup promptly.
@@ -21,7 +21,7 @@ import { homedir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { argv, env, stdout, exit } from 'node:process';
 
-const LAUNCHER_NAME = 'claude-tools-statusline.mjs';
+const LAUNCHER_NAME = 'bench-statusline.mjs';
 
 export function configDir(e = env) {
   return e.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), '.claude');
@@ -34,9 +34,9 @@ export function launcherPath(cfg) {
 // Kept deliberately tiny and dependency-free: it runs on every statusline render,
 // and it must keep working across plugin updates and uninstalls.
 export const LAUNCHER_SOURCE = `#!/usr/bin/env node
-// Managed by the claude-tools plugin. Do not edit — re-run /claude-tools:setup to refresh.
+// Managed by the bench plugin. Do not edit — re-run /bench:setup to refresh.
 //
-// Resolves the newest installed claude-tools and delegates to its statusline. This
+// Resolves the newest installed bench and delegates to its statusline. This
 // indirection exists so settings.local.json never holds a version-pinned path.
 
 import { readdirSync, existsSync } from 'node:fs';
@@ -53,10 +53,10 @@ function newest() {
   try {
     for (const mkt of readdirSync(cache)) {
       let versions;
-      try { versions = readdirSync(join(cache, mkt, 'claude-tools')); } catch { continue; }
+      try { versions = readdirSync(join(cache, mkt, 'bench')); } catch { continue; }
       for (const v of versions) {
         if (!best || v.localeCompare(best.v, undefined, { numeric: true }) > 0) {
-          best = { v, path: join(cache, mkt, 'claude-tools', v) };
+          best = { v, path: join(cache, mkt, 'bench', v) };
         }
       }
     }

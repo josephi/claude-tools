@@ -43,7 +43,7 @@ const git = (cwd, args) => execFileSync('git', args, { cwd, encoding: 'utf8', st
 
 /** A repo with the hook installed. `seed: false` leaves the branch unborn. */
 function repo({ branch = 'master', seed = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'claude-tools-precommit-'));
+  const dir = mkdtempSync(join(tmpdir(), 'bench-precommit-'));
   temps.push(dir);
   git(dir, ['init', '-q', '-b', branch, '.']);
   git(dir, ['config', 'user.email', 't@t']);
@@ -102,9 +102,9 @@ try {
     assert.equal(commit(dir, 'a.txt').code, 0);
   });
 
-  step('CLAUDE_TOOLS_ALLOW_BASE_EDITS=1 allows it, matching the write guard', () => {
+  step('BENCH_ALLOW_BASE_EDITS=1 allows it, matching the write guard', () => {
     const dir = repo();
-    assert.equal(commit(dir, 'a.txt', { env: { CLAUDE_TOOLS_ALLOW_BASE_EDITS: '1' } }).code, 0);
+    assert.equal(commit(dir, 'a.txt', { env: { BENCH_ALLOW_BASE_EDITS: '1' } }).code, 0);
   });
 
   step('--no-verify still works, as an explicit act', () => {

@@ -134,7 +134,7 @@ step('the judge argv disables hooks, MCP and tools', () => {
 // argv unquoted — so the only workable shape is argv with nothing in it that needs
 // quoting: the prompt goes on stdin and the settings JSON goes in a file.
 step('no argv element needs shell quoting', () => {
-  const argv = judgeArgv('/tmp/claude-tools-eval-settings-1.json', '/tmp/claude-tools-eval-mcp-1.json', 'some-model');
+  const argv = judgeArgv('/tmp/bench-eval-settings-1.json', '/tmp/bench-eval-mcp-1.json', 'some-model');
   for (const arg of argv) {
     assert.ok(!/[\s"'{}]/.test(arg), `${JSON.stringify(arg)} would be mangled by a Windows shell`);
   }

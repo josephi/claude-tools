@@ -15,7 +15,7 @@ export function atomicWriteFileSync(path, content, { fallbackMode = 0o600 } = {}
   let mode = fallbackMode;
   try { mode = statSync(path).mode & 0o777; } catch { /* new file: keep the tight default */ }
 
-  const tmp = `${path}.claude-tools.tmp`;
+  const tmp = `${path}.bench.tmp`;
   // A stale tmp from a crashed run must go first: writeFileSync's mode option
   // only applies when it CREATES the file, so reusing a leftover 0644 tmp would
   // rename the wrong permissions into place — the exact downgrade the mode

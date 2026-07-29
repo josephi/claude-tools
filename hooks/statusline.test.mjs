@@ -37,7 +37,7 @@ function step(label, fn) {
 
 /** Build a fake config dir + plugin data dir. */
 function fixture({ settings, local, initialized = true } = {}) {
-  const dir = mkdtempSync(join(tmpdir(), 'claude-tools-sl-'));
+  const dir = mkdtempSync(join(tmpdir(), 'bench-sl-'));
   temps.push(dir);
   const claudeDir = join(dir, '.claude');
   const pluginData = join(dir, 'data');
@@ -49,7 +49,7 @@ function fixture({ settings, local, initialized = true } = {}) {
   return { claudeDir, pluginData };
 }
 
-const ENABLED = { enabledPlugins: { 'claude-tools@josephi-claude-tools': true } };
+const ENABLED = { enabledPlugins: { 'bench@josephi-bench': true } };
 
 console.log('\nstatusline — hook health');
 
@@ -77,7 +77,7 @@ step('disableAllHooks wins over an otherwise healthy setup', () => {
 });
 
 step('detects the plugin explicitly disabled', () => {
-  const h = hookHealth(fixture({ settings: { enabledPlugins: { 'claude-tools@josephi-claude-tools': false } } }));
+  const h = hookHealth(fixture({ settings: { enabledPlugins: { 'bench@josephi-bench': false } } }));
   assert.equal(h.ok, false);
   assert.match(h.reason, /disabled/);
 });
@@ -92,7 +92,7 @@ step('detects not-yet-initialized', () => {
   const h = hookHealth(fixture({ settings: ENABLED, initialized: false }));
   assert.equal(h.ok, false);
   assert.match(h.reason, /not set up/);
-  assert.match(h.reason, /claude-tools:setup/);
+  assert.match(h.reason, /bench:setup/);
 });
 
 step('settings.local.json can enable the plugin on its own', () => {
@@ -101,7 +101,7 @@ step('settings.local.json can enable the plugin on its own', () => {
 });
 
 step('a marketplace-suffixed key still matches', () => {
-  const h = hookHealth(fixture({ settings: { enabledPlugins: { 'claude-tools@some-other-marketplace': true } } }));
+  const h = hookHealth(fixture({ settings: { enabledPlugins: { 'bench@some-other-marketplace': true } } }));
   assert.equal(h.ok, true);
 });
 
@@ -111,7 +111,7 @@ step('missing config files are reported, not thrown', () => {
 });
 
 step('malformed settings JSON does not throw', () => {
-  const dir = mkdtempSync(join(tmpdir(), 'claude-tools-sl-bad-'));
+  const dir = mkdtempSync(join(tmpdir(), 'bench-sl-bad-'));
   temps.push(dir);
   const claudeDir = join(dir, '.claude');
   mkdirSync(claudeDir, { recursive: true });

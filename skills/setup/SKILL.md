@@ -2,27 +2,27 @@
 name: setup
 model: sonnet
 description: >-
-  The single setup command for the claude-tools plugin. Writes the managed rules
+  The single setup command for the bench plugin. Writes the managed rules
   block into CLAUDE.md, collects the worktree prune-base setting, offers the
   deny-list, the statusline and the base-branch commit backstop, and records the
   version in a guard file. Idempotent. TRIGGER after `/plugin install`, when the
   SessionStart hook says setup is incomplete or the plugin was updated, or when
-  the user says "set up claude-tools". SKIP when the guard version already
+  the user says "set up bench". SKIP when the guard version already
   matches the installed version and the user has not asked to re-run.
 tags: [audience/personal, portable/adapt]
 ---
 
-# claude-tools setup
+# bench setup
 
-The one command that makes a claude-tools install complete. `/plugin install` lands the files; nothing else happens until this runs — rules are absent from `CLAUDE.md`, the statusline is unwired, and the `SessionStart` hook keeps nagging.
+The one command that makes a bench install complete. `/plugin install` lands the files; nothing else happens until this runs — rules are absent from `CLAUDE.md`, the statusline is unwired, and the `SessionStart` hook keeps nagging.
 
 This is the only setup entry point.
 
 ## When to run
 
-- Right after `/plugin install claude-tools@josephi-claude-tools` on a new machine.
+- Right after `/plugin install bench@josephi-bench` on a new machine.
 - When the `SessionStart` hook injects context saying setup is incomplete or the plugin was updated. The hook has already shown the user the changelog; act on it.
-- When the user says "set up claude-tools" or "finish the claude-tools install".
+- When the user says "set up bench" or "finish the bench install".
 - After `/plugin marketplace update` — idempotent, so it only changes what's new.
 
 ## Steps
@@ -32,17 +32,17 @@ This is the only setup entry point.
 Must work on macOS, Linux, **and Windows** — don't assume a POSIX shell or `python3`.
 
 - **CONFIG_DIR** — `CLAUDE_CONFIG_DIR` if set, else `~/.claude` (macOS/Linux) or `%USERPROFILE%\.claude` (Windows). This profile normally runs with `CLAUDE_CONFIG_DIR=~/.claude-personal`, so **never hardcode `~/.claude`** — read the variable.
-- **PLUGIN_ROOT** — `CLAUDE_PLUGIN_ROOT` if set, else the newest version directory under `CONFIG_DIR/plugins/cache/*/claude-tools/*/`. The plugin installs into a **version-namespaced cache**, not `CONFIG_DIR/plugins/claude-tools/`.
+- **PLUGIN_ROOT** — `CLAUDE_PLUGIN_ROOT` if set, else the newest version directory under `CONFIG_DIR/plugins/cache/*/bench/*/`. The plugin installs into a **version-namespaced cache**, not `CONFIG_DIR/plugins/bench/`.
 
 ```sh
-node -e "const os=require('os'),fs=require('fs'),P=require('path');const cfg=process.env.CLAUDE_CONFIG_DIR||P.join(os.homedir(),'.claude');let r=process.env.CLAUDE_PLUGIN_ROOT||'';if(r===''){try{const c=P.join(cfg,'plugins','cache');const v=[];for(const m of fs.readdirSync(c)){try{for(const x of fs.readdirSync(P.join(c,m,'claude-tools')))v.push([x,P.join(c,m,'claude-tools',x)]);}catch{}}v.sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));r=v.length?v[v.length-1][1]:'';}catch{}}console.log('CONFIG_DIR='+cfg);console.log('PLUGIN_ROOT='+r);"
+node -e "const os=require('os'),fs=require('fs'),P=require('path');const cfg=process.env.CLAUDE_CONFIG_DIR||P.join(os.homedir(),'.claude');let r=process.env.CLAUDE_PLUGIN_ROOT||'';if(r===''){try{const c=P.join(cfg,'plugins','cache');const v=[];for(const m of fs.readdirSync(c)){try{for(const x of fs.readdirSync(P.join(c,m,'bench')))v.push([x,P.join(c,m,'bench',x)]);}catch{}}v.sort((a,b)=>a[0].localeCompare(b[0],undefined,{numeric:true}));r=v.length?v[v.length-1][1]:'';}catch{}}console.log('CONFIG_DIR='+cfg);console.log('PLUGIN_ROOT='+r);"
 ```
 
-Use the printed values for every path below, via the Read/Write/Edit tools. If `PLUGIN_ROOT` is empty or `PLUGIN_ROOT/.claude-plugin/plugin.json` is missing, the plugin isn't installed — stop and direct the user to `/plugin marketplace add josephi/claude-tools` then `/plugin install claude-tools@josephi-claude-tools`.
+Use the printed values for every path below, via the Read/Write/Edit tools. If `PLUGIN_ROOT` is empty or `PLUGIN_ROOT/.claude-plugin/plugin.json` is missing, the plugin isn't installed — stop and direct the user to `/plugin marketplace add josephi/claude-tools` then `/plugin install bench@josephi-bench`.
 
 ### 1. Decide whether to run
 
-Read the guard file: `CLAUDE_PLUGIN_DATA/.initialized`, falling back to `CONFIG_DIR/plugins/data/claude-tools-josephi-claude-tools/.initialized` (the same path the `SessionStart` hook checks). Its contents are the plugin version last set up here.
+Read the guard file: `CLAUDE_PLUGIN_DATA/.initialized`, falling back to `CONFIG_DIR/plugins/data/bench-josephi-bench/.initialized` (the same path the `SessionStart` hook checks). Its contents are the plugin version last set up here.
 
 - **Matches the installed version** → already done. Ask whether to re-run; exit cleanly if they decline.
 - **Differs** → the plugin was updated. Proceed; step 8 reports what changed.
@@ -57,13 +57,13 @@ Then open `CONFIG_DIR/CLAUDE.md`, creating it with a `# Global Principles` heade
 If the marker pair exists, replace everything between and including the markers; otherwise append with one blank line before it:
 
 ```
-<!-- BEGIN claude-tools rules -->
-<!-- Managed by the claude-tools plugin. Do not edit by hand — run /claude-tools:setup to refresh. -->
+<!-- BEGIN bench rules -->
+<!-- Managed by the bench plugin. Do not edit by hand — run /bench:setup to refresh. -->
 <!-- plugin-version: 1.1.0  installed-at: 2026-07-29T09:15:00Z -->
 
 <inner block content>
 
-<!-- END claude-tools rules -->
+<!-- END bench rules -->
 ```
 
 Use the real `version` from `PLUGIN_ROOT/.claude-plugin/plugin.json` and the current ISO-8601 UTC timestamp.
@@ -112,7 +112,7 @@ If a `permissions.deny` block already exists, **do not touch it** — the user h
 
 ### 5. Offer the statusline
 
-The statusline shows task context and — critically — whether claude-tools's hooks are live. That warning can't come from a hook: with `disableAllHooks: true` no hook runs to report it. The statusline is a separate subsystem that still renders, so it's the only channel that can report its own absence.
+The statusline shows task context and — critically — whether bench's hooks are live. That warning can't come from a hook: with `disableAllHooks: true` no hook runs to report it. The statusline is a separate subsystem that still renders, so it's the only channel that can report its own absence.
 
 Ask first. If yes, install the launcher:
 
@@ -120,22 +120,22 @@ Ask first. If yes, install the launcher:
 node <PLUGIN_ROOT>/skills/setup/scripts/install-launcher.mjs
 ```
 
-It writes `CONFIG_DIR/claude-tools-statusline.mjs` and prints the exact `statusLine` command to use. Then write into `CONFIG_DIR/settings.local.json`:
+It writes `CONFIG_DIR/bench-statusline.mjs` and prints the exact `statusLine` command to use. Then write into `CONFIG_DIR/settings.local.json`:
 
 ```json
 {
   "statusLine": {
     "type": "command",
-    "command": "node \"<CONFIG_DIR>/claude-tools-statusline.mjs\""
+    "command": "node \"<CONFIG_DIR>/bench-statusline.mjs\""
   }
 }
 ```
 
-**Point it at the launcher, never at the plugin cache directly.** The cache is version-namespaced (`plugins/cache/<marketplace>/claude-tools/<version>/`), so a direct path bakes a version into the user's settings and the statusline breaks on the next update. The launcher resolves the newest installed version at run time, so this line is written once and never needs revisiting. It also prints nothing when the plugin is uninstalled, leaving a blank statusline rather than an error.
+**Point it at the launcher, never at the plugin cache directly.** The cache is version-namespaced (`plugins/cache/<marketplace>/bench/<version>/`), so a direct path bakes a version into the user's settings and the statusline breaks on the next update. The launcher resolves the newest installed version at run time, so this line is written once and never needs revisiting. It also prints nothing when the plugin is uninstalled, leaving a blank statusline rather than an error.
 
 Do **not** write `${CLAUDE_PLUGIN_ROOT}` either — that expands for hook commands, not for `statusLine`.
 
-If an existing `statusLine` already points at a `claude-tools/<version>/` path from an older setup, replace it with the launcher. If it points at something that isn't claude-tools, leave it alone and show the user the command instead.
+If an existing `statusLine` already points at a `bench/<version>/` path from an older setup, replace it with the launcher. If it points at something that isn't bench, leave it alone and show the user the command instead.
 
 Output looks like:
 
@@ -159,7 +159,7 @@ chmod +x <repo>/.git/hooks/pre-commit
 
 If a `pre-commit` hook already exists, do **not** overwrite it — show the user the two files and let them decide. Their existing hook may be the project's lint or test gate.
 
-Same escape hatch as the guard (`CLAUDE_TOOLS_ALLOW_BASE_EDITS=1`), plus `git commit --no-verify`. Record each installed path so uninstall can remove it, and note that `.git/hooks/` is not covered by the `settings.local.json` record.
+Same escape hatch as the guard (`BENCH_ALLOW_BASE_EDITS=1`), plus `git commit --no-verify`. Record each installed path so uninstall can remove it, and note that `.git/hooks/` is not covered by the `settings.local.json` record.
 
 ### 7. Record what you wrote
 
@@ -212,7 +212,7 @@ Re-running setup merges into the existing record. `action` and `previous` keep t
 Write the **installed version** into the guard file — not an empty touch. `hooks/check-init.mjs` compares it against `plugin.json`, which is what lets the nag re-fire after an update and stay quiet otherwise, and what scopes the changelog range.
 
 ```sh
-node -e "const os=require('os'),fs=require('fs'),P=require('path');const cfg=process.env.CLAUDE_CONFIG_DIR||P.join(os.homedir(),'.claude');const data=process.env.CLAUDE_PLUGIN_DATA||P.join(cfg,'plugins','data','claude-tools-josephi-claude-tools');const ver=require(P.join(process.env.CLAUDE_PLUGIN_ROOT||'<PLUGIN_ROOT>','.claude-plugin','plugin.json')).version;fs.mkdirSync(data,{recursive:true});fs.writeFileSync(P.join(data,'.initialized'),ver);console.log('wrote '+P.join(data,'.initialized')+' = '+ver);"
+node -e "const os=require('os'),fs=require('fs'),P=require('path');const cfg=process.env.CLAUDE_CONFIG_DIR||P.join(os.homedir(),'.claude');const data=process.env.CLAUDE_PLUGIN_DATA||P.join(cfg,'plugins','data','bench-josephi-bench');const ver=require(P.join(process.env.CLAUDE_PLUGIN_ROOT||'<PLUGIN_ROOT>','.claude-plugin','plugin.json')).version;fs.mkdirSync(data,{recursive:true});fs.writeFileSync(P.join(data,'.initialized'),ver);console.log('wrote '+P.join(data,'.initialized')+' = '+ver);"
 ```
 
 Substitute `<PLUGIN_ROOT>` if `CLAUDE_PLUGIN_ROOT` isn't in the environment. **Record the guard version from step 1 before overwriting it** — the report needs it.
@@ -241,5 +241,5 @@ Then the things this skill cannot do:
 ## What this skill does NOT do
 
 - Install the plugin — that's `/plugin install`.
-- Uninstall — that is `/claude-tools:uninstall` plus `/plugin uninstall`.
+- Uninstall — that is `/bench:uninstall` plus `/plugin uninstall`.
 - Modify `CONFIG_DIR/settings.json` (the non-local one). Everything it writes goes to `settings.local.json`, which the plugin never overwrites.

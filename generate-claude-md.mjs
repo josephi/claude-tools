@@ -30,7 +30,7 @@ const ruleFiles = readdirSync(rulesDir)
   .filter(f => f.endsWith('.md') && f !== '.gitkeep')
   .sort();
 
-const header = `# claude-tools plugin — context
+const header = `# bench plugin — context
 
 Rules and conventions loaded into every session.
 Managed in [josephi/claude-tools](https://github.com/josephi/claude-tools).

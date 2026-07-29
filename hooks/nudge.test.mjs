@@ -283,7 +283,7 @@ console.log('\nnudge — end-to-end stdin/stdout contract');
 let dataDir;
 
 async function withDataDir(fn) {
-  dataDir = await mkdtemp(join(tmpdir(), 'claude-tools-nudge-'));
+  dataDir = await mkdtemp(join(tmpdir(), 'bench-nudge-'));
   try {
     return fn();
   } finally {

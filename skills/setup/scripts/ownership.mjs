@@ -42,7 +42,7 @@ export function configDir(e = env) {
 
 export function pluginDataDir(e = env) {
   return e.CLAUDE_PLUGIN_DATA?.trim()
-    || join(configDir(e), 'plugins', 'data', 'claude-tools-josephi-claude-tools');
+    || join(configDir(e), 'plugins', 'data', 'bench-josephi-bench');
 }
 
 const recordPath = (dataDir) => join(dataDir, RECORD_NAME);
@@ -289,7 +289,7 @@ export function removeRecord(dataDir) {
 export function render(plan) {
   if (!plan.recordPresent) {
     return `No ${RECORD_NAME} — this plugin has no record of writing to settings.local.json.\n`
-      + 'Nothing will be removed. Anything claude-tools-shaped in there predates ownership tracking\n'
+      + 'Nothing will be removed. Anything bench-shaped in there predates ownership tracking\n'
       + 'and is left for you to remove by hand, which is the safe default.';
   }
 
@@ -313,7 +313,7 @@ export function render(plan) {
   else if (plan.statusLine.reason) lines.push(`statusLine: left alone (${plan.statusLine.reason})`, '');
 
   if (plan.claudeMd.action === 'removeBlock') {
-    lines.push('CLAUDE.md: remove the managed claude-tools rules block', '');
+    lines.push('CLAUDE.md: remove the managed bench rules block', '');
   }
 
   if (planOperationCount(plan) === 0) lines.push('Nothing to change.');

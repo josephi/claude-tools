@@ -18,7 +18,7 @@
 // still the thing being discussed.
 //
 // Both directions of error matter, differently. A FALSE POSITIVE denies a read-only
-// command, and the model's only escape is the global CLAUDE_TOOLS_ALLOW_BASE_EDITS,
+// command, and the model's only escape is the global BENCH_ALLOW_BASE_EDITS,
 // which turns the guard off everywhere. UNDER-DETECTION is quieter: the write just
 // happens — which is what happens with no guard at all, so it is a shortfall rather
 // than a regression.

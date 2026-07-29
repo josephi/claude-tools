@@ -18,7 +18,7 @@
 //     documented for SessionStart and not for PostCompact — an event that fires
 //     but whose context is ignored would make this whole path silently inert.
 //
-// Escape hatch: CLAUDE_TOOLS_ALLOW_BASE_EDITS=1 disables the guard. A gate with no
+// Escape hatch: BENCH_ALLOW_BASE_EDITS=1 disables the guard. A gate with no
 // escape hatch is a gate people turn off wholesale via disableAllHooks, which
 // would take the router and nudges down with it.
 //
@@ -78,8 +78,8 @@ export function evaluateWrite(payload, ctx, { allowBaseEdits = false } = {}) {
     permissionDecision: 'deny',
     permissionDecisionReason:
       `git-per-task: you are on "${ctx.branch}", a base branch — direct edits there are not allowed. `
-      + 'Invoke the claude-tools:task-start skill to create or switch to a task branch, then repeat this edit. '
-      + `If this edit is genuinely meant for ${ctx.branch}, the user can set CLAUDE_TOOLS_ALLOW_BASE_EDITS=1. `
+      + 'Invoke the bench:task-start skill to create or switch to a task branch, then repeat this edit. '
+      + `If this edit is genuinely meant for ${ctx.branch}, the user can set BENCH_ALLOW_BASE_EDITS=1. `
       + 'Shelling out to a write command is denied too, so that is not a route around this.',
   };
 }
@@ -150,8 +150,8 @@ export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false,
       permissionDecision: 'deny',
       permissionDecisionReason:
         `git-per-task: this command writes "${target}", which is in a repo on "${ctx.branch}" — a base branch. `
-        + 'Invoke the claude-tools:task-start skill to create or switch to a task branch, then repeat the command. '
-        + `If the write is genuinely meant for ${ctx.branch}, the user can set CLAUDE_TOOLS_ALLOW_BASE_EDITS=1.`,
+        + 'Invoke the bench:task-start skill to create or switch to a task branch, then repeat the command. '
+        + `If the write is genuinely meant for ${ctx.branch}, the user can set BENCH_ALLOW_BASE_EDITS=1.`,
     };
   }
 
@@ -161,13 +161,13 @@ export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false,
 export function compactContext(ctx) {
   const rules = [
     'git-per-task: never edit on a base branch; push after every commit, no batching.',
-    'claude-tools-tools-first: prefer the matching claude-tools skill or agent over hand-rolling.',
-    'pr-review-via-agent: PR reviews go through the claude-tools:code-reviewer agent.',
+    'bench-tools-first: prefer the matching bench skill or agent over hand-rolling.',
+    'pr-review-via-agent: PR reviews go through the bench:code-reviewer agent.',
     'pr-comment-action-scope: only post change-requesting PR comments the user agreed to.',
     'code-comments: default to zero comments; make the code self-explanatory.',
   ];
 
-  const lines = ['claude-tools — re-asserting after compaction.', '', 'Non-negotiable rules:'];
+  const lines = ['bench — re-asserting after compaction.', '', 'Non-negotiable rules:'];
   for (const r of rules) lines.push(`- ${r}`);
 
   if (ctx?.branch) {
@@ -213,7 +213,7 @@ async function main() {
       }
     } else if ((payload.tool_name ?? payload.toolName) === 'Bash') {
       const verdict = evaluateBashWrite(payload, branchContext, {
-        allowBaseEdits: env.CLAUDE_TOOLS_ALLOW_BASE_EDITS === '1',
+        allowBaseEdits: env.BENCH_ALLOW_BASE_EDITS === '1',
         cwd: dir,
       });
       if (verdict) {
@@ -222,7 +222,7 @@ async function main() {
     } else {
       // Judge the branch of the repo the write LANDS IN, not the session's cwd.
       // In a multi-repo or worktree session those differ, and judging cwd denied
-      // legitimate edits — pushing users to CLAUDE_TOOLS_ALLOW_BASE_EDITS=1, which
+      // legitimate edits — pushing users to BENCH_ALLOW_BASE_EDITS=1, which
       // disables the guard everywhere. Falls back to cwd for a brand-new path
       // whose parent does not exist yet.
       const target = targetPath(payload.tool_input ?? payload.toolInput);
@@ -232,7 +232,7 @@ async function main() {
       // The write guard reads only branch/onBase but runs on every Edit and
       // Write, so it takes the two-subprocess context rather than the full one.
       const verdict = evaluateWrite(payload, branchContext(guardDir), {
-        allowBaseEdits: env.CLAUDE_TOOLS_ALLOW_BASE_EDITS === '1',
+        allowBaseEdits: env.BENCH_ALLOW_BASE_EDITS === '1',
       });
       if (verdict) {
         out = { hookSpecificOutput: { hookEventName: 'PreToolUse', ...verdict } };

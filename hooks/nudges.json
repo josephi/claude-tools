@@ -1,5 +1,5 @@
 {
-  "description": "PostToolUse nudge table for the claude-tools nudge hook. Each entry attaches a convention reminder next to the tool result at the moment the convention becomes relevant, instead of relying on the model to recall the right one of ~40 skill descriptions.",
+  "description": "PostToolUse nudge table for the bench nudge hook. Each entry attaches a convention reminder next to the tool result at the moment the convention becomes relevant, instead of relying on the model to recall the right one of ~40 skill descriptions.",
   "maxNudgesPerCall": 2,
   "nudges": [
     {
@@ -12,7 +12,7 @@
         "Tests?\\.cs$",
         "_test\\.py$"
       ],
-      "message": "You are editing a test file. claude-tools:testing-conventions applies: integration over unit for routes and repos, real infrastructure over mocks, no logger stubs, only external services stubbed. A test that cannot fail is worse than no test."
+      "message": "You are editing a test file. bench:testing-conventions applies: integration over unit for routes and repos, real infrastructure over mocks, no logger stubs, only external services stubbed. A test that cannot fail is worse than no test."
     },
     {
       "id": "log-standards",
@@ -21,7 +21,7 @@
       "contentPatterns": [
         "\\b_?log(ger)?\\.(fatal|error|warn|info|verbose|debug|trace)\\s*\\("
       ],
-      "message": "You added a log call. claude-tools:log-standards applies: log major process boundaries and failures, not trivial successes or hot loops. Message must be a static lowercase identifier — no interpolation, no raw error objects. Put every dynamic value in structured metadata, not the message string."
+      "message": "You added a log call. bench:log-standards applies: log major process boundaries and failures, not trivial successes or hot loops. Message must be a static lowercase identifier — no interpolation, no raw error objects. Put every dynamic value in structured metadata, not the message string."
     },
     {
       "id": "post-commit-push",

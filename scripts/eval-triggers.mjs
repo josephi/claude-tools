@@ -192,8 +192,8 @@ function judgeViaCli(prompt) {
     return new Promise((resolve, reject) => {
         // Written to disk rather than passed inline so no argv element contains a
         // quote or brace for a Windows shell to eat.
-        const settingsPath = join(tmpdir(), `claude-tools-eval-settings-${process.pid}.json`);
-        const mcpConfigPath = join(tmpdir(), `claude-tools-eval-mcp-${process.pid}.json`);
+        const settingsPath = join(tmpdir(), `bench-eval-settings-${process.pid}.json`);
+        const mcpConfigPath = join(tmpdir(), `bench-eval-mcp-${process.pid}.json`);
         try {
             writeFileSync(settingsPath, JSON.stringify({ disableAllHooks: true }));
             writeFileSync(mcpConfigPath, EMPTY_MCP_CONFIG);

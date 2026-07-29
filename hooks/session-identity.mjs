@@ -19,7 +19,7 @@
 // The banner goes out as `systemMessage`, which the UI renders as a real notice
 // rather than model prose, so it cannot be paraphrased away or skipped.
 //
-// Opt out with CLAUDE_TOOLS_NO_TAB_TITLE=1.
+// Opt out with BENCH_NO_TAB_TITLE=1.
 //
 // Contract: exit 0 always; print nothing when there is nothing to say.
 
@@ -68,7 +68,7 @@ export function banner(ctx) {
   const body = rows.map(([k, v]) => `  ${k.padEnd(width)} : ${v}`).join('\n');
 
   const rule = '='.repeat(58);
-  const lines = [rule, '  claude-tools - task session', '', body];
+  const lines = [rule, '  bench - task session', '', body];
 
   if (ctx.expectedSessionName) {
     lines.push('', `  -> Run  /rename ${ctx.expectedSessionName}`, '     to align the Claude Code session name.');
@@ -96,7 +96,7 @@ export function isBranchChange(payload) {
 }
 
 function tabPayload(ctx) {
-  if (env.CLAUDE_TOOLS_NO_TAB_TITLE === '1') return {};
+  if (env.BENCH_NO_TAB_TITLE === '1') return {};
   const seq = osc0(tabTitle(ctx));
   return seq ? { terminalSequence: seq } : {};
 }
@@ -115,8 +115,8 @@ export function handleSessionStart(payload, ctx) {
   // On a base branch at startup there is no task yet - say so once, quietly,
   // rather than injecting a directive the model would have to act on.
   if (ctx.onBase && payload.source !== 'compact') {
-    out.systemMessage = `claude-tools - on ${ctx.branch} (a base branch). `
-      + 'Run /claude-tools:task-start before editing; git-per-task forbids direct edits here.';
+    out.systemMessage = `bench - on ${ctx.branch} (a base branch). `
+      + 'Run /bench:task-start before editing; git-per-task forbids direct edits here.';
   }
 
   return Object.keys(out).length ? out : null;

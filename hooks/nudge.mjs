@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// PostToolUse hook. Attaches the relevant claude-tools convention next to the tool
+// PostToolUse hook. Attaches the relevant bench convention next to the tool
 // result at the moment it becomes relevant — a test-file edit gets
 // testing-conventions, a new logger call gets log-standards, a commit gets the
 // git-per-task push reminder.
@@ -23,11 +23,11 @@ import { argv, env, stdin, stdout, exit } from 'node:process';
 import { blankQuoted } from './lib/shell-command.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const TABLE_PATH = env.CLAUDE_TOOLS_NUDGE_TABLE?.trim() || join(HERE, 'nudges.json');
+const TABLE_PATH = env.BENCH_NUDGE_TABLE?.trim() || join(HERE, 'nudges.json');
 
 const CLAUDE_DIR = env.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), '.claude');
 const PLUGIN_DATA = env.CLAUDE_PLUGIN_DATA?.trim()
-  || join(CLAUDE_DIR, 'plugins', 'data', 'claude-tools-josephi-claude-tools');
+  || join(CLAUDE_DIR, 'plugins', 'data', 'bench-josephi-bench');
 
 export function loadTable(path = TABLE_PATH) {
   return JSON.parse(readFileSync(path, 'utf8'));
@@ -151,7 +151,7 @@ function pruneStale(dir) {
 
 export function render(hits) {
   if (hits.length === 0) return null;
-  return hits.map((h) => `claude-tools — ${h.message}`).join('\n\n');
+  return hits.map((h) => `bench — ${h.message}`).join('\n\n');
 }
 
 async function readStdin() {

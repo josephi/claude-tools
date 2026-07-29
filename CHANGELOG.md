@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the `claude-tools` plugin.
+All notable changes to the `bench` plugin.
 
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
@@ -10,6 +10,20 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 2. **A `> one-line TL;DR` immediately under that heading.** The report leads with these. A full entry is too long to scan at session start, so the one-liner is what actually gets read; write it for someone who has not seen the diff.
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
+
+## [2.0.0] - 2026-07-29
+
+> Renamed from `claude-tools` to `bench` — the old name said nothing, and it prefixed every skill reference and env var.
+
+### Changed
+
+- **The plugin is now `bench`.** `claude-tools` carried no information: inside Claude Code every plugin is a Claude tool. The name appears constantly as a prefix, so a short, specific one pays for itself — `bench:task-start` rather than `claude-tools:task-start`, `BENCH_ALLOW_BASE_EDITS` rather than `CLAUDE_TOOLS_ALLOW_BASE_EDITS`.
+
+  Everything downstream moved with it: the marketplace is `josephi-bench`, the install id is `bench@josephi-bench`, the plugin-data directory is `bench-josephi-bench`, the statusline launcher is `bench-statusline.mjs`, the managed `CLAUDE.md` block markers are `<!-- BEGIN bench rules -->`, and `rules/claude-tools-tools-first.md` became `rules/bench-tools-first.md`.
+
+  Major rather than minor because the install identifier and all five env vars changed. Nothing had been installed from the old name yet, so there is no migration to perform — but if you did install 1.1.0, remove it with `/plugin uninstall claude-tools@josephi-claude-tools` first, since uninstall keys off the old guard file and marker block.
+
+  The GitHub repository keeps its `josephi/claude-tools` slug, so `/plugin marketplace add josephi/claude-tools` is unchanged.
 
 ## [1.1.0] - 2026-07-29
 
