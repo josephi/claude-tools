@@ -42,7 +42,7 @@ function step(label, fn) {
 }
 
 function fixture(settingsLocal) {
-  const root = mkdtempSync(join(tmpdir(), 'claude-tools-own-'));
+  const root = mkdtempSync(join(tmpdir(), 'bench-own-'));
   temps.push(root);
   const cfg = join(root, '.claude');
   const data = join(root, 'data');
@@ -144,12 +144,12 @@ step('no record yields an empty plan', () => {
 step('statusLine takes the latest recorded command across runs', () => {
   const { data } = fixture({});
   writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: 'node /OLD/0.6.0/statusline.mjs' } } });
-  writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: 'node /cfg/claude-tools-statusline.mjs' } } });
-  assert.equal(readRecord(data).settingsLocal.statusLine.wroteValue, 'node /cfg/claude-tools-statusline.mjs');
+  writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: 'node /cfg/bench-statusline.mjs' } } });
+  assert.equal(readRecord(data).settingsLocal.statusLine.wroteValue, 'node /cfg/bench-statusline.mjs');
 });
 
 step('a repointed statusLine is still revertable after a re-run', () => {
-  const cmd = 'node /cfg/claude-tools-statusline.mjs';
+  const cmd = 'node /cfg/bench-statusline.mjs';
   const { cfg, data } = fixture({ statusLine: { type: 'command', command: cmd } });
   writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: 'node /OLD/0.6.0/statusline.mjs' } } });
   writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: cmd } } });
@@ -307,7 +307,7 @@ step('no .tmp file is left behind after a successful revert', () => {
   const { cfg, data } = fixture({ env: { K: 'v' } });
   writeRecord(data, { settingsLocal: { env: { K: { action: 'added', wroteValue: 'v' } } } });
   applyRevert(cfg, planRevert(cfg, data));
-  assert.ok(!existsSync(join(cfg, 'settings.local.json.claude-tools.tmp')));
+  assert.ok(!existsSync(join(cfg, 'settings.local.json.bench.tmp')));
 });
 
 // rename installs a NEW inode, so unlike an in-place write it does not inherit

@@ -91,7 +91,7 @@ step('the reason names task-start so the model can self-correct', () => {
 
 step('the reason names the escape hatch', () => {
   assert.match(evaluateWrite(write('Edit', '/r/a.js'), onBase()).permissionDecisionReason,
-    /CLAUDE_TOOLS_ALLOW_BASE_EDITS=1/);
+    /BENCH_ALLOW_BASE_EDITS=1/);
 });
 
 // The guard fails open by design, which means a THROW is indistinguishable from
@@ -164,7 +164,7 @@ console.log('\nguard — post-compaction re-injection');
 
 step('re-asserts the non-negotiable rules', () => {
   const c = compactContext(onTask());
-  for (const s of ['git-per-task', 'claude-tools-tools-first', 'pr-review-via-agent', 'code-comments']) {
+  for (const s of ['git-per-task', 'bench-tools-first', 'pr-review-via-agent', 'code-comments']) {
     assert.ok(c.includes(s), `missing ${s}`);
   }
 });
@@ -197,7 +197,7 @@ console.log('\nguard — end-to-end against a real repo');
 const temps = [];
 
 async function makeRepo() {
-  const dir = await mkdtemp(join(tmpdir(), 'claude-tools-guard-'));
+  const dir = await mkdtemp(join(tmpdir(), 'bench-guard-'));
   temps.push(dir);
   const origin = join(dir, 'origin.git');
   const work = join(dir, 'work');
@@ -318,7 +318,7 @@ try {
       'git status --short',
       'echo "a > b"',
       `cat ${join(work, 'a.txt')}`,
-      'echo scratch > /tmp/claude-tools-scratch.txt',
+      'echo scratch > /tmp/bench-scratch.txt',
     ]) {
       assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(cmd) }, work), null, cmd);
     }
@@ -408,14 +408,14 @@ try {
 
   step('the escape hatch also covers Bash writes', () => {
     const res = run({ hook_event_name: 'PreToolUse', ...bash(`cat > ${join(work, 'a.txt')}`) },
-      work, { CLAUDE_TOOLS_ALLOW_BASE_EDITS: '1' });
+      work, { BENCH_ALLOW_BASE_EDITS: '1' });
     assert.equal(res, null);
   });
 
   step('escape hatch unblocks master', () => {
     G(['checkout', 'master'], work);
     const res = run({ hook_event_name: 'PreToolUse', ...write('Edit', join(work, 'a.txt')) }, work,
-      { CLAUDE_TOOLS_ALLOW_BASE_EDITS: '1' });
+      { BENCH_ALLOW_BASE_EDITS: '1' });
     assert.equal(res, null);
   });
 

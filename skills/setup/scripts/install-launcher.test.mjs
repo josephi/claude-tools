@@ -39,7 +39,7 @@ function step(label, fn) {
 }
 
 function cfgDir() {
-  const d = mkdtempSync(join(tmpdir(), 'claude-tools-launch-'));
+  const d = mkdtempSync(join(tmpdir(), 'bench-launch-'));
   temps.push(d);
   return join(d, '.claude');
 }
@@ -53,7 +53,7 @@ function cfgDir() {
  * launcher rendered nothing against the real module, which does not.
  */
 function addVersion(cfg, version, marker) {
-  const dir = join(cfg, 'plugins', 'cache', 'josephi-claude-tools', 'claude-tools', version, 'hooks');
+  const dir = join(cfg, 'plugins', 'cache', 'josephi-bench', 'bench', version, 'hooks');
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, 'statusline.mjs'), [
     "import { argv, stdout } from 'node:process';",
@@ -70,7 +70,7 @@ function addVersion(cfg, version, marker) {
 
 /** The real module, to prove the launcher works against what actually ships. */
 function addRealVersion(cfg, version) {
-  const base = join(cfg, 'plugins', 'cache', 'josephi-claude-tools', 'claude-tools', version);
+  const base = join(cfg, 'plugins', 'cache', 'josephi-bench', 'bench', version);
   mkdirSync(join(base, 'hooks', 'lib'), { recursive: true });
   const src = join(HERE, '..', '..', '..', 'hooks');
   copyFileSync(join(src, 'statusline.mjs'), join(base, 'hooks', 'statusline.mjs'));
@@ -197,7 +197,7 @@ step('prints nothing when the cache dir does not exist at all', () => {
 step('prints nothing when a version dir has no statusline', () => {
   const cfg = cfgDir();
   install(cfg);
-  mkdirSync(join(cfg, 'plugins', 'cache', 'm', 'claude-tools', '9.9.9'), { recursive: true });
+  mkdirSync(join(cfg, 'plugins', 'cache', 'm', 'bench', '9.9.9'), { recursive: true });
   assert.equal(runLauncher(cfg), '');
 });
 
@@ -232,7 +232,7 @@ step('--json reports what it did', () => {
 });
 
 step('human output gives the statusLine command to use', () => {
-  assert.match(cli(cfgDir()), /node .*claude-tools-statusline\.mjs/);
+  assert.match(cli(cfgDir()), /node .*bench-statusline\.mjs/);
 });
 
 for (const d of temps) rmSync(d, { recursive: true, force: true });

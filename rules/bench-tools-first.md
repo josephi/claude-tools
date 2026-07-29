@@ -1,19 +1,19 @@
 ---
-description: At the start of any task, check for a matching claude-tools skill or agent before falling back to generic execution. Prefer the specialized tool; use ad-hoc behavior only after concluding none fits, and say why.
+description: At the start of any task, check for a matching bench skill or agent before falling back to generic execution. Prefer the specialized tool; use ad-hoc behavior only after concluding none fits, and say why.
 tags: [audience/personal, portable/adapt]
 ---
 
-# claude-tools tools first
+# bench tools first
 
-The claude-tools plugin ships task-specific skills and agents, and their names and descriptions are in context every turn. So the question is never awareness — only choice. Default to the specialized tool.
+The bench plugin ships task-specific skills and agents, and their names and descriptions are in context every turn. So the question is never awareness — only choice. Default to the specialized tool.
 
 The `route` hook already nudges toward the right tool when a prompt matches its table, but the table is deliberately narrow: it only fires on high-confidence patterns, and caps at two routes per prompt. This rule covers everything the table does not.
 
 ## At the start of every task
 
-1. Match the task against the available claude-tools skills and agents — read their `description` / TRIGGER lines, not just their names.
+1. Match the task against the available bench skills and agents — read their `description` / TRIGGER lines, not just their names.
 2. If one fits, use it: invoke the skill or delegate to the agent. Don't hand-roll what a tool already does.
-3. Fall back to generic execution only after concluding no claude-tools tool fits — and when you do, say so in one line (e.g. "no skill covers X, doing it directly").
+3. Fall back to generic execution only after concluding no bench tool fits — and when you do, say so in one line (e.g. "no skill covers X, doing it directly").
 
 ## Expected routing
 

@@ -348,15 +348,15 @@ async function lintHookTables() {
 }
 
 // Every name a target string points at. Covers the `skill:`/`agent:`/`rule:`
-// prefixes and bare `claude-tools:<name>` mentions, which appear in parenthesised
-// alternatives like "(or claude-tools:business-analyst for PRD breakdown)". Only
+// prefixes and bare `bench:<name>` mentions, which appear in parenthesised
+// alternatives like "(or bench:business-analyst for PRD breakdown)". Only
 // matching the two prefixes meant a renamed rule left the router pointing at
 // nothing — exactly what this check exists to catch.
 function referencedNames(target) {
     if (typeof target !== 'string') return [];
     const names = new Set();
-    for (const m of target.matchAll(/(?:skill|agent|rule):(?:claude-tools:)?([a-z0-9-]+)/g)) names.add(m[1]);
-    for (const m of target.matchAll(/(?<![\w:])claude-tools:([a-z0-9-]+)/g)) names.add(m[1]);
+    for (const m of target.matchAll(/(?:skill|agent|rule):(?:bench:)?([a-z0-9-]+)/g)) names.add(m[1]);
+    for (const m of target.matchAll(/(?<![\w:])bench:([a-z0-9-]+)/g)) names.add(m[1]);
     return [...names];
 }
 
@@ -451,7 +451,7 @@ async function lintChangelog() {
     if (existsSync(marketplacePath)) {
         try {
             const mkt = JSON.parse(await readFile(marketplacePath, 'utf8'));
-            const entry = (mkt.plugins ?? []).find((p) => p.name === 'claude-tools');
+            const entry = (mkt.plugins ?? []).find((p) => p.name === 'bench');
             if (entry && entry.version !== version) {
                 err('.claude-plugin/marketplace.json',
                     `version ${entry.version} does not match plugin.json ${version} — bump both together`);

@@ -1,4 +1,4 @@
-# claude-tools
+# bench
 
 Personal Claude Code plugin — rules, skills, agents, and commands that reflect how I work as a developer / architect / team lead, independent of any employer.
 
@@ -8,16 +8,16 @@ Add this plugin to your Claude Code personal profile:
 
 ```
 /plugin marketplace add josephi/claude-tools
-/plugin install claude-tools@josephi-claude-tools
+/plugin install bench@josephi-bench
 ```
 
-Then run `/claude-tools:setup` once. `/plugin install` only lands the files — setup writes the rules block into `CLAUDE.md`, collects the worktree prune base, and offers the statusline and the base-branch commit backstop. A `SessionStart` hook nags until it has run, and re-fires after an update.
+Then run `/bench:setup` once. `/plugin install` only lands the files — setup writes the rules block into `CLAUDE.md`, collects the worktree prune base, and offers the statusline and the base-branch commit backstop. A `SessionStart` hook nags until it has run, and re-fires after an update.
 
 To register the marketplace by hand instead, add to `<config-dir>/plugins/known_marketplaces.json`:
 
 ```json
 {
-  "josephi-claude-tools": {
+  "josephi-bench": {
     "source": { "source": "github", "repo": "josephi/claude-tools" }
   }
 }
@@ -51,7 +51,7 @@ The plugin enforces its own conventions rather than asking the model to remember
 
 The shell-write half of `guard` is a deterrent, not a gate: reading a shell line is not a solved problem. The gate is the optional `pre-commit` backstop that `setup` offers per repo, which needs no shell parsing because git already knows the branch by then.
 
-Escape hatch for both: `CLAUDE_TOOLS_ALLOW_BASE_EDITS=1`.
+Escape hatch for both: `BENCH_ALLOW_BASE_EDITS=1`.
 
 ### Personal-flow conventions
 

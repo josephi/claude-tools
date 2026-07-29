@@ -64,12 +64,12 @@ step('buildContext: absent guard → first-init message with version', () => {
   assert.ok(ctx, 'expected non-null context');
   assert.match(ctx, /0\.2\.0/);
   assert.match(ctx, /not yet initialized/i);
-  assert.match(ctx, /claude-tools:setup/);
+  assert.match(ctx, /bench:setup/);
 });
 
 step('buildContext: names only the one setup skill, never the removed ones', () => {
   for (const ctx of [buildContext('0.6.0', null), buildContext('0.6.0', '0.5.0')]) {
-    assert.ok(!/claude-tools-init|claude-tools-rules-install/.test(ctx),
+    assert.ok(!/bench-init|bench-rules-install/.test(ctx),
       `context still references a removed skill: ${ctx}`);
   }
 });
@@ -111,13 +111,13 @@ step('buildContext: unknown installed version with NO guard still nags', () => {
 let tmpRoot = null;
 
 async function main() {
-  tmpRoot = await mkdtemp(join(tmpdir(), 'claude-tools-hook-'));
+  tmpRoot = await mkdtemp(join(tmpdir(), 'bench-hook-'));
   const pluginRoot = join(tmpRoot, 'plugin');
   const dataDir = join(tmpRoot, 'data');
   await mkdir(join(pluginRoot, '.claude-plugin'), { recursive: true });
   await mkdir(dataDir, { recursive: true });
   await writeFile(join(pluginRoot, '.claude-plugin', 'plugin.json'),
-    JSON.stringify({ name: 'claude-tools', version: '9.9.9' }));
+    JSON.stringify({ name: 'bench', version: '9.9.9' }));
 
   const baseEnv = { CLAUDE_PLUGIN_ROOT: pluginRoot, CLAUDE_PLUGIN_DATA: dataDir };
 
@@ -174,7 +174,7 @@ async function main() {
     // Assert on the report's structure, not on changelog prose — the work
     // original matched a phrase that happened to appear in its own entry body,
     // which broke the moment the file was rewritten for this plugin.
-    assert.match(res.systemMessage, /claude-tools updated/i);
+    assert.match(res.systemMessage, /bench updated/i);
     assert.match(res.systemMessage, /TL;DR/);
     assert.ok(res.systemMessage.includes(CURRENT_VERSION), 'report names the new version');
     assert.match(res.hookSpecificOutput.additionalContext, /updated/i);
@@ -202,7 +202,7 @@ async function main() {
     const second = run(env2);
     assert.ok(!second.systemMessage.includes('TL;DR'), 'second session must not repeat the changelog');
     assert.ok(!second.systemMessage.includes('\n'), 'reminder is a single line');
-    assert.match(second.systemMessage, /\/claude-tools:setup/, 'still tells them what to run');
+    assert.match(second.systemMessage, /\/bench:setup/, 'still tells them what to run');
 
     const third = run(env2);
     assert.equal(third.systemMessage, second.systemMessage, 'stays a one-liner');
@@ -210,7 +210,7 @@ async function main() {
 
   step('e2e: the model is still told to run setup on every session', () => {
     const res = run({ CLAUDE_PLUGIN_ROOT: REAL_ROOT, CLAUDE_PLUGIN_DATA: onceData, NO_COLOR: '1' });
-    assert.match(res.hookSpecificOutput.additionalContext, /claude-tools:setup/);
+    assert.match(res.hookSpecificOutput.additionalContext, /bench:setup/);
   });
 
   step('e2e: a version whose changelog was never shown reports in full', () => {
@@ -241,7 +241,7 @@ async function main() {
     const brokenRoot = join(tmpRoot, 'broken-plugin');
     mkdirSync(join(brokenRoot, '.claude-plugin'), { recursive: true });
     writeFileSync(join(brokenRoot, '.claude-plugin', 'plugin.json'),
-      JSON.stringify({ name: 'claude-tools', version: '5.5.5' }));
+      JSON.stringify({ name: 'bench', version: '5.5.5' }));
     writeFileSync(join(brokenRoot, 'CHANGELOG.md'), 'not a changelog at all');
 
     const data = join(tmpRoot, 'broken-data');
@@ -268,7 +268,7 @@ async function main() {
     mkdirSync(colorData, { recursive: true });
     writeFileSync(join(colorData, '.initialized'), '0.5.0');
     const res = run({
-      CLAUDE_PLUGIN_ROOT: REAL_ROOT, CLAUDE_PLUGIN_DATA: colorData, CLAUDE_TOOLS_REPORT_COLOR: '1',
+      CLAUDE_PLUGIN_ROOT: REAL_ROOT, CLAUDE_PLUGIN_DATA: colorData, BENCH_REPORT_COLOR: '1',
     });
     assert.match(res.systemMessage, /\x1b\[36m/, 'expected colour');
     assert.ok(!res.systemMessage.includes('\x1b[0m'),

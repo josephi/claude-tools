@@ -61,7 +61,7 @@ Preamble text that is not a version.
 // Colour defaults ON, so content assertions pass NOCOLOR to keep escape codes out
 // of the way. Colour itself is asserted separately below.
 const NOCOLOR = { NO_COLOR: '1' };
-const COLOR = { CLAUDE_TOOLS_REPORT_COLOR: '1' };
+const COLOR = { BENCH_REPORT_COLOR: '1' };
 
 console.log('\nchangelog — version compare');
 
@@ -209,7 +209,7 @@ step('multi-version TL;DR labels each version', () => {
 });
 
 step('tells the user what to do next', () => {
-  assert.match(renderUpdateReport(entries, '0.5.0', '0.6.0', NOCOLOR), /\/claude-tools:setup/);
+  assert.match(renderUpdateReport(entries, '0.5.0', '0.6.0', NOCOLOR), /\/bench:setup/);
 });
 
 step('decorates section headings with emoji', () => {
@@ -232,12 +232,12 @@ step('colour is off under NO_COLOR', () => {
   assert.equal(paint('x', 'cyan', NOCOLOR), 'x');
 });
 
-step('CLAUDE_TOOLS_REPORT_COLOR=0 wins over an unset NO_COLOR', () => {
-  assert.equal(colorEnabled({ CLAUDE_TOOLS_REPORT_COLOR: '0' }), false);
+step('BENCH_REPORT_COLOR=0 wins over an unset NO_COLOR', () => {
+  assert.equal(colorEnabled({ BENCH_REPORT_COLOR: '0' }), false);
 });
 
-step('CLAUDE_TOOLS_REPORT_COLOR=1 wins over NO_COLOR', () => {
-  assert.equal(colorEnabled({ NO_COLOR: '1', CLAUDE_TOOLS_REPORT_COLOR: '1' }), true);
+step('BENCH_REPORT_COLOR=1 wins over NO_COLOR', () => {
+  assert.equal(colorEnabled({ NO_COLOR: '1', BENCH_REPORT_COLOR: '1' }), true);
 });
 
 step('paint wraps with a scoped close, never a full reset', () => {
@@ -278,7 +278,7 @@ step('names the version and the command', () => {
   const s = renderShortReminder('0.5.0', '0.6.0', NOCOLOR);
   assert.match(s, /0\.6\.0/);
   assert.match(s, /0\.5\.0/);
-  assert.match(s, /\/claude-tools:setup/);
+  assert.match(s, /\/bench:setup/);
 });
 
 step('is a single line', () => {
@@ -330,7 +330,7 @@ step('the shipped report renders with a TL;DR ahead of the detail', () => {
   const r = renderUpdateReport(shipped, shipped.at(-1).version, installedVersion);
   assert.ok(r, 'expected a report across the full shipped range');
   assert.ok(r.indexOf('TL;DR') < r.indexOf('📌'), 'TL;DR must precede the per-version detail');
-  assert.match(r, /\/claude-tools:setup/);
+  assert.match(r, /\/bench:setup/);
 });
 
 console.log(`\n${pass} passed, ${fail} failed\n`);

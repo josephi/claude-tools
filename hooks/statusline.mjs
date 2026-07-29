@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Statusline: task context, unpushed count, and claude-tools hook health.
+// Statusline: task context, unpushed count, and bench hook health.
 //
 // The hook-health segment is the reason this exists rather than being another
 // hook. When `disableAllHooks: true` is set, or the plugin is disabled, *no hook
@@ -11,7 +11,7 @@
 // Must be fast and must never crash: a throwing statusline shows an error where
 // the user expects context, on every render.
 //
-// Opt out of colour with NO_COLOR, or CLAUDE_TOOLS_REPORT_COLOR=0.
+// Opt out of colour with NO_COLOR, or BENCH_REPORT_COLOR=0.
 
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
@@ -23,7 +23,7 @@ import { colorEnabled } from './lib/changelog.mjs';
 
 const CLAUDE_DIR = env.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), '.claude');
 const PLUGIN_DATA = env.CLAUDE_PLUGIN_DATA?.trim()
-  || join(CLAUDE_DIR, 'plugins', 'data', 'claude-tools-josephi-claude-tools');
+  || join(CLAUDE_DIR, 'plugins', 'data', 'bench-josephi-bench');
 
 // colorEnabled treats NO_COLOR=0 as "colour on"; a bare !env.NO_COLOR did not,
 // because the string '0' is truthy.
@@ -40,7 +40,7 @@ function readJson(path) {
 }
 
 /**
- * Are claude-tools's hooks actually going to run?
+ * Are bench's hooks actually going to run?
  *
  * Checks the two settings files a user can realistically break this in. Managed
  * settings could also disable hooks and are not readable here, so a clean result
@@ -59,13 +59,13 @@ export function hookHealth({ claudeDir = CLAUDE_DIR, pluginData = PLUGIN_DATA } 
   const settings = readJson(join(claudeDir, 'settings.json')) ?? {};
   const local = readJson(join(claudeDir, 'settings.local.json')) ?? {};
   const enabled = { ...settings.enabledPlugins, ...local.enabledPlugins };
-  const key = Object.keys(enabled).find((k) => k.startsWith('claude-tools@'));
+  const key = Object.keys(enabled).find((k) => k.startsWith('bench@'));
 
-  if (key && enabled[key] === false) return { ok: false, reason: 'claude-tools plugin disabled' };
-  if (!key) return { ok: false, reason: 'claude-tools plugin not enabled' };
+  if (key && enabled[key] === false) return { ok: false, reason: 'bench plugin disabled' };
+  if (!key) return { ok: false, reason: 'bench plugin not enabled' };
 
   if (!existsSync(join(pluginData, '.initialized'))) {
-    return { ok: false, reason: 'claude-tools not set up (/claude-tools:setup)' };
+    return { ok: false, reason: 'bench not set up (/bench:setup)' };
   }
 
   return { ok: true, reason: null };
@@ -121,7 +121,7 @@ async function main() {
     stdout.write(renderLine(taskContext(dir), hookHealth()));
   } catch {
     // Never surface a stack trace where the user expects their branch name.
-    stdout.write(dim('claude-tools statusline unavailable'));
+    stdout.write(dim('bench statusline unavailable'));
   }
   exit(0);
 }

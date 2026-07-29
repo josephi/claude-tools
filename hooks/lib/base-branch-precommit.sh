@@ -1,5 +1,5 @@
 #!/bin/sh
-# claude-tools: refuse a commit on a base branch.
+# bench: refuse a commit on a base branch.
 #
 # The PreToolUse guard stops the WRITE, which means it has to understand what a
 # command is about to do — and shell being what it is, that understanding is never
@@ -10,13 +10,13 @@
 # signal that catches the ordinary cases; this is the backstop that holds regardless
 # of how the file got written — a heredoc, a nested interpreter, an editor, anything.
 #
-# Escape hatch matches the guard's: CLAUDE_TOOLS_ALLOW_BASE_EDITS=1. `git commit
+# Escape hatch matches the guard's: BENCH_ALLOW_BASE_EDITS=1. `git commit
 # --no-verify` also bypasses it, which is fine — that is an explicit, deliberate act,
 # not an accident.
 #
-# Installed by /claude-tools:setup, removed by /claude-tools:uninstall.
+# Installed by /bench:setup, removed by /bench:uninstall.
 
-[ "${CLAUDE_TOOLS_ALLOW_BASE_EDITS}" = "1" ] && exit 0
+[ "${BENCH_ALLOW_BASE_EDITS}" = "1" ] && exit 0
 
 # symbolic-ref, not `rev-parse --abbrev-ref`: the latter fails on an unborn branch,
 # so in a repo with no commits yet the hook exited 0 and protected nothing.
@@ -32,7 +32,7 @@ case "$branch" in
 esac
 
 cat >&2 <<EOF
-claude-tools: refusing to commit on "$branch" — it is a base branch.
+bench: refusing to commit on "$branch" — it is a base branch.
 
   git-per-task: work happens on a task branch, never directly on a base branch.
 
@@ -42,7 +42,7 @@ To move this commit onto a branch, keeping the staged changes:
   git commit
 
 If this commit genuinely belongs on $branch, either set
-CLAUDE_TOOLS_ALLOW_BASE_EDITS=1 or pass --no-verify.
+BENCH_ALLOW_BASE_EDITS=1 or pass --no-verify.
 EOF
 
 exit 1

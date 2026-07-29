@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // SessionStart hook. Emits SessionStart additionalContext asking Claude to run
-// the claude-tools:setup skill when the plugin is not yet initialized on this
+// the bench:setup skill when the plugin is not yet initialized on this
 // machine, or when it was updated since the last init (guard-file version !=
 // installed version). Claude Code has no plugin-install/update hook event, so
 // SessionStart — the first event after an install/update + reload — is the
@@ -27,14 +27,14 @@ const HOME = homedir();
 const CLAUDE_DIR = env.CLAUDE_CONFIG_DIR?.trim() || join(HOME, '.claude');
 
 // The plugin installs into a version-namespaced cache:
-// <config-dir>/plugins/cache/<marketplace>/claude-tools/<version>/. When run outside
+// <config-dir>/plugins/cache/<marketplace>/bench/<version>/. When run outside
 // plugin context (CLAUDE_PLUGIN_ROOT unset) pick the highest installed version.
 function discoverPluginRoot() {
   const cache = join(CLAUDE_DIR, 'plugins', 'cache');
   let best = null;
   try {
     for (const mkt of readdirSync(cache)) {
-      const tipDir = join(cache, mkt, 'claude-tools');
+      const tipDir = join(cache, mkt, 'bench');
       let versions;
       try { versions = readdirSync(tipDir); } catch { continue; }
       for (const v of versions) {
@@ -50,7 +50,7 @@ function discoverPluginRoot() {
 // (plugins/data/<plugin>-<marketplace>); the root fallback scans the cache.
 const PLUGIN_ROOT = env.CLAUDE_PLUGIN_ROOT?.trim() || discoverPluginRoot();
 const PLUGIN_DATA = env.CLAUDE_PLUGIN_DATA?.trim()
-  || join(CLAUDE_DIR, 'plugins', 'data', 'claude-tools-josephi-claude-tools');
+  || join(CLAUDE_DIR, 'plugins', 'data', 'bench-josephi-bench');
 const GUARD_FILE = join(PLUGIN_DATA, '.initialized');
 
 function installedVersion() {
@@ -76,8 +76,8 @@ function guardVersion() {
 
 function buildContext(installed, guard) {
   if (guard === null) {
-    return `The claude-tools plugin (v${installed}) is installed but not yet initialized on this machine. `
-      + `Run the claude-tools:setup skill now to finish setup: it offers the base-branch pre-commit `
+    return `The bench plugin (v${installed}) is installed but not yet initialized on this machine. `
+      + `Run the bench:setup skill now to finish setup: it offers the base-branch pre-commit `
       + `hook per repository and registers projects in the projects.<key> block of `
       + `<config-dir>/settings.local.json. Confirm with the user before prompting for any secret. `
       + `On completion the skill records the version in the guard file so this stops appearing.`;
@@ -89,8 +89,8 @@ function buildContext(installed, guard) {
   if (installed === 'unknown') return null;
 
   if (guard !== installed) {
-    return `The claude-tools plugin was updated (initialized v${guard || 'legacy'} -> now v${installed}). `
-      + `Run the claude-tools:setup skill to apply any new rules or env-var questions from the update. `
+    return `The bench plugin was updated (initialized v${guard || 'legacy'} -> now v${installed}). `
+      + `Run the bench:setup skill to apply any new rules or env-var questions from the update. `
       + `It is idempotent and only changes what is new, then records v${installed} in the guard file. `
       + `The changelog for this range has already been shown to the user, so summarise rather than repeat it.`;
   }

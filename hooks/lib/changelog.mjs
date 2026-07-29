@@ -41,12 +41,12 @@ export function sectionEmoji(heading) {
 //      terminal or future renderer does show the codes literally, a few tokens
 //      garble instead of the whole report.
 //
-// Honours NO_COLOR, and CLAUDE_TOOLS_REPORT_COLOR=0 turns it off outright.
+// Honours NO_COLOR, and BENCH_REPORT_COLOR=0 turns it off outright.
 const FG = { cyan: 36, green: 32, yellow: 33, magenta: 35, bold: 1 };
 
 export function colorEnabled(e = {}) {
-  if (e.CLAUDE_TOOLS_REPORT_COLOR === '0') return false;
-  if (e.CLAUDE_TOOLS_REPORT_COLOR === '1') return true;
+  if (e.BENCH_REPORT_COLOR === '0') return false;
+  if (e.BENCH_REPORT_COLOR === '1') return true;
   return !e.NO_COLOR;
 }
 
@@ -160,7 +160,7 @@ export function renderUpdateReport(entries, from, to, e = {}) {
   const rule = '─'.repeat(58);
   const out = [];
 
-  out.push(`📦  ${paint('claude-tools updated', 'bold', e)}`
+  out.push(`📦  ${paint('bench updated', 'bold', e)}`
     + `${from ? ` ${from} -> ` : ' to '}${paint(to, 'cyan', e)}`
     + (relevant.length > 1 ? `  (${relevant.length} versions)` : ''));
 
@@ -174,7 +174,7 @@ export function renderUpdateReport(entries, from, to, e = {}) {
     }
   }
 
-  out.push('', `👉  Run ${paint('/claude-tools:setup', 'green', e)} to apply it.`, '', rule);
+  out.push('', `👉  Run ${paint('/bench:setup', 'green', e)} to apply it.`, '', rule);
 
   for (const x of relevant) {
     out.push('', `📌  ${paint(x.version, 'cyan', e)}${x.date ? `  ${x.date}` : ''}`,
@@ -190,9 +190,9 @@ export function renderUpdateReport(entries, from, to, e = {}) {
  * to skip it, and the guard file can stay unset for days.
  */
 export function renderShortReminder(from, to, e = {}) {
-  return `📦  claude-tools ${paint(to, 'cyan', e)} is installed but not set up`
+  return `📦  bench ${paint(to, 'cyan', e)} is installed but not set up`
     + `${from ? ` (you last set up ${from})` : ''}.`
-    + `  👉  Run ${paint('/claude-tools:setup', 'green', e)}.`;
+    + `  👉  Run ${paint('/bench:setup', 'green', e)}.`;
 }
 
 /** Just the version numbers in the range — for a one-line mention. */
