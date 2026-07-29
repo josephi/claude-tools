@@ -13,7 +13,7 @@ The agent:
 - Picks the right language checklist (`review-javascript`, `review-dotnet`, `review-sql`, …)
 - Produces the standard severity-graded finding format
 - Posts inline and summary comments
-- DMs the author on Slack
+- Announces the review on Discord or GitHub Discussions when the PR is someone else's
 
 Ad-hoc chat reviews skip these steps and almost always miss findings the checklists catch.
 

@@ -90,6 +90,56 @@ See the `deslop` rule for general prose quality. Specifically for chat:
 - Short first line — most clients truncate the preview.
 - Direct: what changed, why, link.
 
+## claude-tools-tools-first
+
+# claude-tools tools first
+
+The claude-tools plugin ships task-specific skills and agents, and their names and descriptions are in context every turn. So the question is never awareness — only choice. Default to the specialized tool.
+
+The `route` hook already nudges toward the right tool when a prompt matches its table, but the table is deliberately narrow: it only fires on high-confidence patterns, and caps at two routes per prompt. This rule covers everything the table does not.
+
+## At the start of every task
+
+1. Match the task against the available claude-tools skills and agents — read their `description` / TRIGGER lines, not just their names.
+2. If one fits, use it: invoke the skill or delegate to the agent. Don't hand-roll what a tool already does.
+3. Fall back to generic execution only after concluding no claude-tools tool fits — and when you do, say so in one line (e.g. "no skill covers X, doing it directly").
+
+## Expected routing
+
+- PR review → `code-reviewer` agent (see `pr-review-via-agent`), never an ad-hoc chat review.
+- Starting an issue → `task-start` before any code change.
+- GitHub Issue creation / breakdown → `scrum-master` agent, or `business-analyst` from a PRD.
+- Writing tests → `qa-automation`, following `testing-conventions`.
+- Backend implementation / refactor → `senior-developer`.
+- System design, service boundaries, schema and caching → `solution-architect`.
+- A mapping/lookup/parse that "has surely been done before" → apply `prior-art-first`.
+- Which repo / branch / gh account am I on → `github-context`.
+- Is staging up, what commit is live → `deploy-status`; if gcloud auth fails, `gcloud-auth`.
+- Anything needing a project's config → the `projects.<key>` registry, via `personal-projects`.
+
+The list is illustrative, not exhaustive — scan what's actually installed each time, since the plugin evolves.
+
+## What this is not
+
+- Not a mandate to force-fit a skill onto an unrelated task. If nothing matches, generic execution is the correct outcome — just reach it as a conclusion, not a default.
+- Not a mid-task override. This governs the initial tool choice; once inside a skill or agent, follow that tool's own steps.
+
+## code-comments
+
+# Code comments
+
+Default to **no code comments**, in every language (C#, JavaScript/TypeScript, SQL, Python, etc.). Make the code self-explanatory — clear names, small functions, obvious structure — instead of narrating it.
+
+Add a comment only in the rare case the code genuinely cannot be made self-explanatory:
+
+- a non-obvious workaround (and *why* it's needed),
+- a subtle invariant or ordering constraint a reader would otherwise break,
+- a "why" the code itself cannot express (a business rule, a link to a ticket/spec).
+
+**Why:** Comments that restate what the code does are noise — they drift out of sync with the code, clutter diffs, and train readers to stop trusting them. Naming and structure carry the intent; a comment should only carry what they cannot.
+
+**How to apply:** When writing or editing code, add zero comments by default. Match a file's existing comment density only when it is already sparse. Before adding a comment, ask whether a rename or a small refactor would remove the need for it — if so, do that instead.
+
 ## execution-style
 
 # Execution style
@@ -129,7 +179,11 @@ The `!` prefix runs the command at the user level and pipes the output back into
 
 ## Protected branches
 
-Never make direct edits on `dev`, `master`, or `main`. Always work from a task branch.
+Never make direct edits on `dev`, `develop`, `master`, or `main`. Always work from a task branch.
+
+Don't route around this with a shell write either — a heredoc, `>` redirect, `sed -i`, or `cp` into a base-branch checkout is the same edit wearing a disguise. The rule is "no writes to a base branch", whatever tool makes the write.
+
+Carve-out: machine config (`.claude-personal/settings.local.json`) and anything under `.git/` stay writable on a base branch, since those aren't product code.
 
 ## node-import-style
 
@@ -223,7 +277,7 @@ The agent:
 - Picks the right language checklist (`review-javascript`, `review-dotnet`, `review-sql`, …)
 - Produces the standard severity-graded finding format
 - Posts inline and summary comments
-- DMs the author on Slack
+- Announces the review on Discord or GitHub Discussions when the PR is someone else's
 
 Ad-hoc chat reviews skip these steps and almost always miss findings the checklists catch.
 

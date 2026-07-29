@@ -1,0 +1,72 @@
+{
+    "task-start": {
+        "should-trigger": [
+            "Let's start working on #42",
+            "I'm going to begin gh-91 — the queue retry bug",
+            "Time to work on the new issue assigned to me",
+            "Begin work on issue 123 please"
+        ],
+        "should-skip": [
+            "Can you explain how the upload orchestrator works?",
+            "What's wrong with this function?",
+            "I need to fix a small typo in the README",
+            "Show me recent commits on this branch"
+        ]
+    },
+    "task-completion": {
+        "should-trigger": [
+            "We're done — let's ship it",
+            "OK, close this task",
+            "Looks good, wrap this up",
+            "Ship it"
+        ],
+        "should-skip": [
+            "Can you write the next test?",
+            "Let me commit this WIP work",
+            "I'm still debugging the failing case",
+            "Add another check to the validation"
+        ]
+    },
+    "deslop": {
+        "should-trigger": [
+            "Draft a PR description for this branch",
+            "Write a Discord announcement for the security fix",
+            "Help me write the GitHub Issue description",
+            "Update the README with this change"
+        ],
+        "should-skip": [
+            "Write a unit test for the parser",
+            "Add a log line when the queue is full",
+            "Update the JSON config schema",
+            "Refactor this function"
+        ]
+    },
+    "refactor-flow": {
+        "should-trigger": [
+            "Let's refactor the upload orchestrator into smaller modules",
+            "Extract the queue management into a shared package",
+            "Consolidate the duplicate transformer logic across the two providers",
+            "Restructure the retry logic — it's spread across three files"
+        ],
+        "should-skip": [
+            "Rename this variable",
+            "Fix the typo in the constants file",
+            "Add a new field to the response payload",
+            "Bump the package version"
+        ]
+    },
+    "plan-workflow": {
+        "should-trigger": [
+            "Plan how we'd add multi-tenant support",
+            "Design the approach for migrating from RabbitMQ to Pub/Sub",
+            "Help me think through the new sync retry strategy",
+            "Let's plan the rollout for the new feature flag"
+        ],
+        "should-skip": [
+            "Fix the off-by-one in retryManager.js",
+            "Add a log line here",
+            "Update the package version",
+            "What does this regex match?"
+        ]
+    }
+}

@@ -1,20 +1,21 @@
 #!/usr/bin/env node
-// Claude Code Stop-hook: if the session ran inside a worktree whose branch is
-// already merged into origin/<base>, prune the worktree + branch + dir.
+// Claude Code SessionEnd hook: if the session ran inside a worktree whose
+// branch is already merged into origin/<base>, prune the worktree + branch + dir.
 //
 // Conservative: never touches main, never prunes unmerged or dirty branches,
-// silent on every guardrail miss so it's safe on every Stop event.
+// silent on every guardrail miss so it's safe on every session end.
 //
-// Wired via ~/.claude/settings.json:
-//   "hooks": {
-//     "Stop": [
-//       { "hooks": [{ "type": "command", "command": "node ~/.claude/skills/worktree-manager/scripts/prune-self-on-stop.mjs" }] }
-//     ]
-//   }
+// Not wired by default. To enable, add a SessionEnd hook to the plugin's
+// hooks/hooks.json (or to your own settings.json):
+//   "SessionEnd": [
+//     { "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/skills/worktree-manager/scripts/prune-self-on-stop.mjs" }] }
+//   ]
 //
 // Env vars:
 //   CLAUDE_PROJECT_DIR  the session's primary working directory (set by harness)
-//   CLAUDE_PRUNE_BASE   override base branch (default: dev)
+//   CLAUDE_PRUNE_BASE   base branch(es) to check merges against — a single branch
+//                       or a comma-separated list, e.g. "dev,master,main"
+//                       (default: dev). Prunes if merged into ANY listed base.
 
 import { execSync } from 'node:child_process';
 import { existsSync, rmSync } from 'node:fs';
@@ -22,7 +23,8 @@ import { resolve } from 'node:path';
 import { env, exit } from 'node:process';
 
 const PROJECT_DIR = env.CLAUDE_PROJECT_DIR;
-const BASE = env.CLAUDE_PRUNE_BASE || 'dev';
+// One base branch or a comma-separated list; prune if merged into ANY of them.
+const BASES = (env.CLAUDE_PRUNE_BASE || 'dev').split(',').map((b) => b.trim()).filter(Boolean);
 const REGEN_PREFIXES = ['.husky/_', 'node_modules'];
 
 if (!PROJECT_DIR || !existsSync(PROJECT_DIR)) exit(0);
@@ -67,19 +69,23 @@ if (status) {
     if (dirty.length > 0) exit(0);
 }
 
-// Refresh the base ref. Non-fatal if offline.
-git(`-C "${mainPath}" fetch --quiet origin ${BASE}`);
-
-// Squash-merge-aware merge check via `git cherry`:
+// Squash-merge-aware merge check via `git cherry`, against each configured base:
 //   '+' lines are commits whose patch is NOT in base → still unmerged.
 //   '-' lines are commits whose patch IS in base.
-const cherry = git(`-C "${mainPath}" cherry origin/${BASE} ${branch}`);
-if (cherry === null) exit(0);
-const unmerged = cherry.split('\n').filter((line) => line.trim().startsWith('+'));
-if (unmerged.length > 0) exit(0);
+// Prune if the branch is fully merged into ANY of the bases. A base whose ref
+// can't be resolved (offline / doesn't exist) is skipped, not fatal.
+let mergedInto = null;
+for (const base of BASES) {
+    git(`-C "${mainPath}" fetch --quiet origin ${base}`); // refresh; non-fatal if offline
+    const cherry = git(`-C "${mainPath}" cherry origin/${base} ${branch}`);
+    if (cherry === null) continue; // base ref unavailable — try the next one
+    const unmerged = cherry.split('\n').filter((line) => line.trim().startsWith('+'));
+    if (unmerged.length === 0) { mergedInto = base; break; }
+}
+if (!mergedInto) exit(0);
 
 // All guardrails passed — prune.
-console.error(`[claude-stop-hook] pruning merged worktree: ${PROJECT_DIR} (branch ${branch})`);
+console.error(`[claude-stop-hook] pruning merged worktree: ${PROJECT_DIR} (branch ${branch}, merged into ${mergedInto})`);
 const removed = git(`-C "${mainPath}" worktree remove --force "${PROJECT_DIR}"`);
 if (removed === null) {
     console.error(`[claude-stop-hook] worktree remove failed; leaving on disk`);

@@ -22,6 +22,8 @@ Structured planning before non-trivial implementation. Optimizes for alignment-f
 
 ## Phase 3 — Coverage review (architect × QA × business-analyst)
 
+**Scale to the risk first.** For a small, well-understood change, a single combined pass (or skipping straight to Phase 4) is fine — don't spin up three specialist agents by default. Reserve the full three-lens pass for genuinely multi-file, shared-logic, or architecturally-significant work.
+
 Before the plan is finalized, run a coverage pass so the result isn't just *an* approach but a *fully-covered* one. Launch three specialist agents in parallel on the draft design, each with a distinct lens:
 
 - **business-analyst** — are the acceptance criteria complete and testable? Does the approach satisfy every requirement, including the implicit ones? What is explicitly out of scope?
@@ -30,12 +32,13 @@ Before the plan is finalized, run a coverage pass so the result isn't just *an* 
 
 Then **reconcile** their findings into one agreed set of acceptance criteria and a test / edge-case list. Where they conflict — e.g. the BA wants a criterion QA says is untestable as designed, or the architect's identity model changes what "done" means — surface the tradeoff with `AskUserQuestion` rather than silently picking one. Gaps they find become changes to the design, not afterthoughts.
 
-Keep it to one focused round: the goal is closing coverage gaps before approval, not a design-by-committee loop. For a small, well-understood change, a single combined pass (or skipping straight to Phase 4) is fine — scale the ceremony to the risk.
+Keep it to one focused round: the goal is closing coverage gaps before approval, not a design-by-committee loop.
 
 ## Phase 4 — Review
 
 - Read the critical files the Plan agents cited. Confirm they exist and behave as described.
 - Use `AskUserQuestion` to clarify requirements or choose between approaches. Never ask "is the plan okay?" — that's `ExitPlanMode`'s job.
+- Reserve `AskUserQuestion` for genuine tradeoffs and unreconciled specialist conflicts. For minor, reversible design choices, pick a reasonable option, note it in the plan, and move on — don't gate the plan on trivia.
 
 ## Phase 5 — Final plan
 

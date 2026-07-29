@@ -54,6 +54,17 @@ Delegate test authoring to the **qa-automation** agent, which enforces these by 
 - **Run the linter too**, not just the test runner. `test:unit` (mocha) does **not** run ESLint, so `no-undef` / `no-unused-vars` errors pass locally and fail the CI quality gate. Run `npm run lint` (or `npx eslint <changed files>`, 0 errors) before pushing.
 - Docker is available locally. Missing Redis/DB/MSSQL is not an excuse to skip.
 
+## A failing test is real until proven otherwise
+
+Do **not** call a test "flaky" or re-queue CI as the first response to a red build. "Flaky" is a conclusion you earn by reproducing, not a default explanation for a failure you'd rather not investigate. Before you may describe a failure as flaky:
+
+1. **Reproduce it locally.** Run the exact failing spec(s) (`TEST_SPEC=… npm run test:e2e` / `test:unit`). If it fails locally, it is not flaky — debug it. (Docker is available; a slow container start is an environment issue to fix, e.g. free resources, not a test fault.)
+2. **Check determinism.** Re-run a few times. The **same** tests failing every run ⇒ a real, deterministic bug. A **shifting** set across runs is the only thing that even hints at flakiness — and even then you investigate the shared cause (test ordering, leaked state, a cache/singleton, timing) rather than shrugging.
+3. **Compare against the base branch.** If the spec passes on `dev`/`master` (or another PR's CI on the same base passed it) but fails on your branch, it is **your change**, full stop — not the suite.
+4. **Find the mechanism before concluding.** Name the actual cause (which assertion, which flag/state, which line). If you can't, you haven't finished investigating. Instrument with temporary logs, reproduce, then remove the logs.
+
+Only after 1–4 fail to surface a deterministic cause may you call it flaky — and then say *why* it's non-deterministic (the shared state / timing) and, ideally, fix or ticket it. Re-queueing to get green without a root cause hides a real regression.
+
 ## Common mistakes
 
 - Unit-testing a route by mocking its router. The route still passes, production still breaks — mock removed the only thing that was real.

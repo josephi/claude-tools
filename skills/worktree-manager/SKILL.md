@@ -21,7 +21,7 @@ Claude Code's worktree feature creates dirs with adjective-style names (`goofy-m
 
 ## When to invoke
 
-Run `node ~/.claude/skills/worktree-manager/scripts/manage.mjs <subcommand>` for any of these:
+Run `node ${CLAUDE_SKILL_DIR}/scripts/manage.mjs <subcommand>` for any of these:
 
 | Situation | Subcommand |
 |---|---|
@@ -39,7 +39,7 @@ Run `node ~/.claude/skills/worktree-manager/scripts/manage.mjs <subcommand>` for
 Before creating a branch for a task, **scan for an existing worktree first**:
 
 ```bash
-node ~/.claude/skills/worktree-manager/scripts/manage.mjs find-task <task-id>
+node ${CLAUDE_SKILL_DIR}/scripts/manage.mjs find-task <task-id>
 ```
 
 If it returns a worktree path, tell the user to switch to it instead of starting fresh in the current location. If it returns `{ found: false }`, proceed with normal task-start.
@@ -48,7 +48,7 @@ If it returns a worktree path, tell the user to switch to it instead of starting
 
 If the current directory is a worktree (not the main checkout):
 
-1. Run `node ~/.claude/skills/worktree-manager/scripts/manage.mjs init` — runs `npm run init-worktree` if dependencies aren't linked. **Always run this — don't just remind the user.**
+1. Run `node ${CLAUDE_SKILL_DIR}/scripts/manage.mjs init` — runs `npm run init-worktree` if dependencies aren't linked. **Always run this — don't just remind the user.**
 2. The directory rename has to happen from the **main checkout** because `git worktree move` cannot rename the dir you're standing in. Tell the user: *"your worktree dir is `<old>`; run worktree-manager from the main checkout to rename to `<expected>` and sync the workspace file"*. Don't try to rename from inside the worktree.
 
 ### After renaming a worktree
@@ -103,7 +103,7 @@ Both files are added to `.gitignore` automatically (the skill appends if missing
 A self-contained integration test lives at `scripts/test.mjs`. It builds a throwaway git repo in `os.tmpdir()`, creates worktrees, exercises every subcommand, and asserts the outputs.
 
 ```bash
-node ~/.claude/skills/worktree-manager/scripts/test.mjs
+node ${CLAUDE_SKILL_DIR}/scripts/test.mjs
 ```
 
 Runs in ~3 seconds, no network or external services. Cross-platform: same test passes on macOS, Linux, and Windows. Run it after editing `manage.mjs`.
@@ -132,8 +132,10 @@ manage.mjs init [--worktree <path>]
 manage.mjs find-task <task-id>
   → returns the worktree for this task id, or { found: false }
 
-manage.mjs prune-merged [--base <branch>] [--apply]
-  → list (or remove with --apply) worktrees whose branch is merged into base (default: dev)
+manage.mjs prune-merged [--base <branch[,branch...]>] [--apply]
+  → list (or remove with --apply) worktrees whose branch is merged into ANY of the
+    given bases. --base accepts a single branch or a comma-separated list
+    (e.g. --base dev,master). Default: dev.
 
 manage.mjs all
   → rename (if in main) + init (if in worktree) + sync-workspace

@@ -1,0 +1,13 @@
+{
+  "$comment": "Questions the setup skill asks on first install. Answers go into <config-dir>/settings.local.json's env block. Re-run interactively via /claude-tools:setup. Adding a question here makes it auto-prompted on next setup. Personal projects authenticate through `gh auth` and `gcloud auth`, so there are no API tokens to collect here — per-project config lives in the projects.<key> registry, which the personal-projects skill writes.",
+  "questions": [
+    {
+      "name": "CLAUDE_PRUNE_BASE",
+      "prompt": "Base branch(es) for git worktrees — pick every base your repos use; the SessionEnd auto-prune hook prunes a worktree when its branch is merged into ANY selected base",
+      "default": "main",
+      "allowed": ["main", "master", "dev", "develop"],
+      "multiple": true,
+      "$note": "Stored as a comma-separated list, e.g. \"main,master\". Consumers (worktree-manager prune) split on comma."
+    }
+  ]
+}

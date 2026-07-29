@@ -125,6 +125,7 @@ const RENAMED_ADAPTATIONS = {
   'skills/slack-formatting':          'rules/chat-formatting.md',
   'skills/jira':                      'skills/github-issues',
   'skills/syncapp-git-conventions':   'skills/git-conventions',
+  'skills/slack-nontechnical':        'skills/chat-nontechnical',
 };
 
 // Verbatim items the personal tree has locally diverged from. Upstream tags
@@ -133,16 +134,27 @@ const RENAMED_ADAPTATIONS = {
 // upstream drifts, so the divergence can be re-merged by hand. Keys are
 // source-side `<kind>/<name>`.
 //   - rules/pr-review-via-agent.md : personal-only "Standalone vs integration" section
+//   - rules/git-per-task.md        : upstream enforcement prose is tip-sync-specific
 //   - skills/plan-workflow         : Jira handoff paragraph rewritten for GitHub Issues
+//   - skills/deslop                : trigger list uses Discord / GitHub Issues
+//   - skills/worktree-manager      : uses ${CLAUDE_SKILL_DIR} rather than a fixed config dir
+//   - agents/qa-automation.md      : project context comes from projects.<key>, not service.json
+//   - agents/solution-architect.md : same
 const PROTECTED_LOCAL = new Set([
   'rules/pr-review-via-agent.md',
+  'rules/git-per-task.md',
   'skills/plan-workflow',
+  'skills/deslop',
+  'skills/worktree-manager',
+  'agents/qa-automation.md',
+  'agents/solution-architect.md',
 ]);
 
 const stats = {
   verbatimUpdated: 0, verbatimUnchanged: 0, verbatimProtected: 0, verbatimProtectedDrift: 0,
   adaptedNew: 0, adaptedRefreshed: 0, adaptedKeptLive: 0, adaptedKeptPending: 0, adaptedUnchanged: 0, adaptedRenamed: 0,
   skippedWork: 0, skippedInternal: 0, skippedUntagged: 0,
+  watchedUnchanged: 0, watchedDrift: 0,
 };
 
 async function processItem({ kind, name, srcPath, isDir }) {
@@ -265,10 +277,40 @@ async function walkAgents() {
   }
 }
 
+// Directories that carry no audience/portable frontmatter, so the tag-based
+// routing above cannot classify them. They were silently invisible to the
+// importer until the whole hooks/ system was found missing months after it
+// landed upstream — every hook here is now a hand adaptation, so the useful
+// signal is "upstream moved, go look", not a copy.
+//
+// The recorded hash is of the upstream tree, not ours. It is bumped by hand
+// after each review, which is the point: bumping it is the acknowledgement.
+const WATCHED_DIRS = [
+  { rel: 'hooks',   upstreamHash: '4ebe2fd9dade060a1889b67e8e96ec3aa87573dd4861863ab1272c61bca14178' },
+  { rel: 'scripts', upstreamHash: '4ad0110d5f5869fc0a9ef82bf012959eb8d72f693e2a531e749e68be85b502dc' },
+];
+
+async function walkWatched() {
+  for (const { rel, upstreamHash } of WATCHED_DIRS) {
+    const srcPath = join(SOURCE, rel);
+    if (!existsSync(srcPath)) continue;
+    const actual = await dirHash(srcPath);
+    if (actual === upstreamHash) {
+      stats.watchedUnchanged++;
+      continue;
+    }
+    stats.watchedDrift++;
+    log(`  watch   ← ${rel}/ upstream changed (recorded ${upstreamHash.slice(0, 12)}, now ${actual.slice(0, 12)})`);
+    log(`            every file here is hand-adapted; diff it against ${SOURCE}/${rel} and`);
+    log(`            update WATCHED_DIRS in import.mjs once reviewed.`);
+  }
+}
+
 log(`importing from ${SOURCE}${DRY ? ' (dry-run)' : ''}${FORCE ? ' (force)' : ''}\n`);
 log('rules:');   await walkRules();
 log('\nskills:'); await walkSkills();
 log('\nagents:'); await walkAgents();
+log('\nwatched (hand-adapted, never auto-copied):'); await walkWatched();
 
 log('\n── summary ──');
 log(`  verbatim updated:          ${stats.verbatimUpdated}`);
@@ -284,4 +326,6 @@ log(`  kept (pending):            ${stats.adaptedKeptPending}`);
 log(`  skipped (work-only):       ${stats.skippedWork}`);
 log(`  skipped (internal):        ${stats.skippedInternal}`);
 if (stats.skippedUntagged) log(`  skipped (untagged):        ${stats.skippedUntagged}`);
+log(`  watched unchanged:         ${stats.watchedUnchanged}`);
+if (stats.watchedDrift) log(`  watched (upstream drift):  ${stats.watchedDrift}`);
 if (DRY) log('\n(dry-run; no files written)');
