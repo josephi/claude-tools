@@ -119,6 +119,16 @@ step('issueRefFromBranch reads the number positionally', () => {
   assert.equal(issueRefFromBranch('master'), null);
 });
 
+step('issueRefFromBranch handles a nested branch name', () => {
+  assert.equal(issueRefFromBranch('user/feat/42_x')?.ref, '#42');
+  assert.equal(issueRefFromBranch('refactor/42_x')?.ref, '#42');
+  assert.equal(issueRefFromBranch('42_x')?.ref, '#42');
+});
+
+step('issueRefFromBranch rejects issue number zero', () => {
+  assert.equal(issueRefFromBranch('refactor/0_x'), null);
+});
+
 step('issueRefFromBranch ignores a non-numeric first segment', () => {
   assert.equal(issueRefFromBranch('spike/try-something'), null);
   assert.equal(issueRefFromBranch('feat/add-thing'), null);

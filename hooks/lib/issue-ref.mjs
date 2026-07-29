@@ -104,7 +104,11 @@ export function toKebab(s) {
  */
 export function issueRefFromBranch(branch) {
   if (typeof branch !== 'string') return null;
-  const tail = branch.includes('/') ? branch.slice(branch.indexOf('/') + 1) : branch;
+  // lastIndexOf, not indexOf: a nested branch (`user/feat/42_x`) would
+  // otherwise leave `feat/42_x` as the tail and match nothing. The work
+  // original split on the first slash because a Jira key contains letters and
+  // a type like `fix` could shadow it; a bare number has no such ambiguity.
+  const tail = branch.includes('/') ? branch.slice(branch.lastIndexOf('/') + 1) : branch;
   const m = /^(\d{1,5})(?:_|$)/.exec(tail);
   if (!m) return null;
   const number = String(Number.parseInt(m[1], 10));
@@ -115,7 +119,7 @@ export function issueRefFromBranch(branch) {
 /** The `<short-goal>` half of `<type>/<issue-number>_<short-goal>`. */
 export function branchGoal(branch) {
   if (typeof branch !== 'string') return '';
-  const tail = branch.includes('/') ? branch.slice(branch.indexOf('/') + 1) : branch;
+  const tail = branch.includes('/') ? branch.slice(branch.lastIndexOf('/') + 1) : branch;
   const us = tail.indexOf('_');
   return us === -1 ? '' : tail.slice(us + 1);
 }

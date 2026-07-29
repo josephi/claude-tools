@@ -137,13 +137,17 @@ const RENAMED_ADAPTATIONS = {
 //   - rules/git-per-task.md        : upstream enforcement prose is tip-sync-specific
 //   - skills/plan-workflow         : Jira handoff paragraph rewritten for GitHub Issues
 //   - skills/deslop                : trigger list uses Discord / GitHub Issues
-//   - skills/worktree-manager      : prune hook is opt-in here, not wired by default
+//   - skills/worktree-manager      : uses ${CLAUDE_SKILL_DIR} rather than a fixed config dir
+//   - agents/qa-automation.md      : project context comes from projects.<key>, not service.json
+//   - agents/solution-architect.md : same
 const PROTECTED_LOCAL = new Set([
   'rules/pr-review-via-agent.md',
   'rules/git-per-task.md',
   'skills/plan-workflow',
   'skills/deslop',
   'skills/worktree-manager',
+  'agents/qa-automation.md',
+  'agents/solution-architect.md',
 ]);
 
 const stats = {

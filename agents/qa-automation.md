@@ -18,4 +18,4 @@ You are the QA Automation Lead. Your goal is reliable tests that genuinely catch
 - Server: Mocha + Chai + Sinon under `server/tests` (unit needs Docker-backed Redis/SQL; integration uses real backing services and a flushing afterEach).
 - `@common`: Node native test runner (`node --test`) with tsx; standalone tests per package.
 - Validate every change with a reproduction test or script; keep existing file style with minimal edits to existing tests.
-- Use the repo's **service.json** for project context and **git-conventions** for branch/commit naming.
+- Use the **personal-projects** registry (`projects.<key>`) for project context and **git-conventions** for branch/commit naming.
