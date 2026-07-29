@@ -1,0 +1,46 @@
+#!/usr/bin/env bash
+# Resolve the personal-project key for the current cwd (or an arg).
+#
+# Usage:
+#   project-key                   # uses cwd's git repo basename
+#   project-key /path/to/repo     # uses that path's basename
+#   project-key A-clim-v2         # treats arg as the repo basename directly
+#
+# Lookup order:
+#   1. exact key match in projects.<name>
+#   2. any projects.<key>.match glob that matches the basename
+# Prints the resolved key, or exits 1 with a message if nothing matches.
+
+set -euo pipefail
+
+CFG="${PROJECTS_CFG:-$HOME/.claude-personal/settings.local.json}"
+
+target="${1:-}"
+if [ -z "$target" ]; then
+  target=$(git rev-parse --show-toplevel 2>/dev/null || true)
+fi
+# If target looks like a path, take basename; otherwise treat as-is.
+case "$target" in
+  */*) target=$(basename "$target") ;;
+esac
+
+if [ -z "$target" ]; then
+  echo "project-key: no target (not in a git repo and no arg given)" >&2
+  exit 1
+fi
+
+python3 - "$CFG" "$target" <<'PY'
+import json, os, sys, fnmatch
+cfg_path, target = sys.argv[1], sys.argv[2]
+if not os.path.isfile(cfg_path):
+    sys.exit(f"project-key: config not found at {cfg_path}")
+cfg = json.load(open(cfg_path))
+projects = cfg.get("projects", {})
+for key, body in projects.items():
+    if key == target:
+        print(key); break
+    if any(fnmatch.fnmatch(target, g) for g in body.get("match", [])):
+        print(key); break
+else:
+    sys.exit(f"project-key: no match for '{target}'. Known keys: {', '.join(projects)}")
+PY
