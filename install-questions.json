@@ -1,0 +1,59 @@
+{
+  "$comment": "Questions the setup skill (and legacy sync.mjs) ask the user on first install. Answers go into ~/.claude/settings.local.json's env block. Re-run interactively via /tip-sync:setup or `node sync.mjs configure`. Adding a question here makes it auto-prompted on next setup.",
+  "questions": [
+    {
+      "name": "CLAUDE_PRUNE_BASE",
+      "prompt": "Base branch(es) for git worktrees — pick every base your repos use; the SessionEnd auto-prune hook prunes a worktree when its branch is merged into ANY selected base",
+      "default": "dev",
+      "allowed": ["dev", "master", "main", "develop"],
+      "multiple": true,
+      "$note": "Stored as a comma-separated list, e.g. \"dev,master\". Consumers (worktree-manager prune) split on comma."
+    },
+    {
+      "name": "JIRA_URL",
+      "prompt": "Jira base URL (on-prem)",
+      "default": "https://jira.tipalti.com:7000"
+    },
+    {
+      "name": "JIRA_USERNAME",
+      "prompt": "Your Tipalti Jira username (the part before @tipalti.com)"
+    },
+    {
+      "name": "JIRA_PERSONAL_TOKEN",
+      "prompt": "Jira personal access token — create one at <JIRA_URL>/secure/ViewProfile.jspa → Personal Access Tokens",
+      "secret": true
+    },
+    {
+      "name": "CONFLUENCE_URL",
+      "prompt": "Confluence base URL (on-prem)",
+      "default": "https://confluence.tipalti.com:8090/"
+    },
+    {
+      "name": "CONFLUENCE_USERNAME",
+      "prompt": "Your Tipalti Confluence username (typically same as Jira)"
+    },
+    {
+      "name": "CONFLUENCE_API_TOKEN",
+      "prompt": "Confluence personal access token",
+      "secret": true
+    },
+    {
+      "name": "AWS_ACCESS_KEY_ID",
+      "prompt": "AWS access key ID (skip if you don't need AWS CLI from Claude)",
+      "optional": true,
+      "secret": true
+    },
+    {
+      "name": "AWS_SECRET_ACCESS_KEY",
+      "prompt": "AWS secret access key (skip if you don't need AWS CLI from Claude)",
+      "optional": true,
+      "secret": true
+    },
+    {
+      "name": "CORALOGIX_DEV_API_KEY",
+      "prompt": "Coralogix Dev workspace API key (skip if you don't use the coralogix-dashboards or tip-health skills)",
+      "optional": true,
+      "secret": true
+    }
+  ]
+}

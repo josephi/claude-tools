@@ -1,0 +1,55 @@
+{
+  "description": "PostToolUse nudge table for the claude-tools nudge hook. Each entry attaches a convention reminder next to the tool result at the moment the convention becomes relevant, instead of relying on the model to recall the right one of ~40 skill descriptions.",
+  "maxNudgesPerCall": 2,
+  "nudges": [
+    {
+      "id": "testing-conventions",
+      "tools": ["Edit", "Write", "MultiEdit", "NotebookEdit"],
+      "oncePerSession": true,
+      "filePathPatterns": [
+        "\\.(test|spec)\\.(m?js|ts|jsx|tsx)$",
+        "(^|/)(tests?|__tests__|spec)/",
+        "Tests?\\.cs$",
+        "_test\\.py$"
+      ],
+      "message": "You are editing a test file. claude-tools:testing-conventions applies: integration over unit for routes and repos, real infrastructure over mocks, no logger stubs, only external services stubbed. A test that cannot fail is worse than no test."
+    },
+    {
+      "id": "log-standards",
+      "tools": ["Edit", "Write", "MultiEdit"],
+      "oncePerSession": true,
+      "contentPatterns": [
+        "\\b_?log(ger)?\\.(fatal|error|warn|info|verbose|debug|trace)\\s*\\("
+      ],
+      "message": "You added a log call. claude-tools:log-standards applies: log major process boundaries and failures, not trivial successes or hot loops. Message must be a static lowercase identifier — no interpolation, no raw error objects. Put every dynamic value in structured metadata, not the message string."
+    },
+    {
+      "id": "post-commit-push",
+      "tools": ["Bash"],
+      "$comment": "Anchored to a shell command boundary, with ^\\s* so an indented command still matches. The `unless` flags are anchored too: bare '--amend' matched `git commit -m \"fix --amend handling\"` and suppressed the nudge.",
+      "commandPatterns": ["(?:^\\s*|[;&|]\\s*|\\n\\s*)git(?:\\s+-\\S+(?:\\s+[^-\\s]\\S*)?)*\\s+commit\\b"],
+      "commandUnless": [
+        "\\s--dry-run(?=\\s|$)",
+        "\\s--amend(?=\\s|$)",
+        "\\s-h(?=\\s|$)",
+        "\\s--help(?=\\s|$)",
+        "(?:^\\s*|[;&|]\\s*|\\n\\s*)git(?:\\s+-\\S+(?:\\s+[^-\\s]\\S*)?)*\\s+push\\b"
+      ],
+      "message": "Commit made. The git-per-task rule requires reaching the remote immediately — run `git pull --rebase` then `git push` now. No batching: each commit reaches origin so feedback stays continuous."
+    },
+    {
+      "id": "code-comments",
+      "tools": ["Edit", "Write", "MultiEdit"],
+      "oncePerSession": true,
+      "$comment": "filePathPatterns restricts this to source files. Without it a markdown '# Heading' matched the '#' comment pattern, so editing CHANGELOG.md told the model it had added a code comment.",
+      "filePathPatterns": [
+        "\\.(m?[jt]sx?|cs|java|kt|go|rs|rb|php|py|sh|bash|ps1|sql|css|scss|vue|svelte)$"
+      ],
+      "contentPatterns": [
+        "^\\s*//(?!\\s*(TODO|FIXME|eslint|@ts-|prettier|biome|c8|istanbul|#))",
+        "^\\s*#(?!\\s*(!|include|define|pragma|region|endregion|\\[))(?![\\w-]+\\s*[{,:])\\s*[A-Za-z]"
+      ],
+      "message": "You added a code comment. The code-comments rule defaults to zero comments in every language — make the code self-explanatory instead. Keep it only if it carries a non-obvious workaround and why, a subtle invariant a reader would break, or a business rule / ticket link the code cannot express. Otherwise a rename or small refactor should remove the need for it."
+    }
+  ]
+}

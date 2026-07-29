@@ -1,0 +1,149 @@
+{
+  "description": "Prompt-time routing table for the claude-tools UserPromptSubmit hook. Each route that matches contributes one directive injected alongside the user's prompt. Patterns are JS regex source, matched case-insensitively.",
+  "maxRoutesPerPrompt": 2,
+  "taskRefPatterns": [
+    "\\b(the |a |my |this |that |new )*(github )?(issue|ticket|user story|sub-?task)\\b",
+    "\\bthe (new |next )?task\\b"
+  ],
+  "routes": [
+    {
+      "id": "task-start",
+      "target": "skill:claude-tools:task-start",
+      "requiresTaskRef": true,
+      "when": [
+        "\\b(start|starting|begin|beginning|work(ing)? on|pick(ing)? up|take|taking|assigned|let'?s do|time to)\\b"
+      ],
+      "unless": [
+        "\\b(explain|what does|what is|how does|why does|show me|glance|sanity.?check|remind me|status of|link to|task list|todo list|backlog|the board)\\b"
+      ],
+      "message": "This prompt reads as starting work on a task ({{issues}}). Invoke the claude-tools:task-start skill BEFORE any file edit — it resolves the base branch, checks for an existing branch locally and on origin, creates or switches to it, and runs worktree init. Branch shape comes from claude-tools:git-conventions: <type>/<issue-number>_<short-goal>. Do not create the branch by hand and do not edit files first."
+    },
+    {
+      "id": "task-completion",
+      "target": "skill:claude-tools:task-completion",
+      "when": [
+        "\\b(ship it|we'?re done|close (this|the) task|wrap (this|it) up|finish (this|the) task|open (a|the) PR|create (a|the) PR|raise (a|the) PR)\\b"
+      ],
+      "unless": [
+        "\\b(don'?t|do not|not yet|later|how do I|what happens)\\b"
+      ],
+      "message": "This is task wrap-up. Invoke the claude-tools:task-completion skill — it runs the tests, opens the PR as draft with the type and size labels the pr-labels rule requires, waits for your OK before publishing, announces on Discord or GitHub Discussions, then closes the issue on merge. Do not open the PR directly."
+    },
+    {
+      "id": "pr-review",
+      "target": "agent:claude-tools:code-reviewer",
+      "when": [
+        "\\breview\\b[\\s\\S]{0,80}\\b(PR|pull ?request|merge request)\\b",
+        "\\b(PR|pull ?request|merge request)\\b[\\s\\S]{0,40}\\breview\\b"
+      ],
+      "unless": [
+        "\\b(quick|glance|sanity.?check|just look|informal|draft only|don'?t post)\\b"
+      ],
+      "message": "Per the pr-review-via-agent rule: delegate to the claude-tools:code-reviewer agent. It pulls the PR, picks the language checklist (review-javascript / review-dotnet / review-sql), produces the severity-graded findings, and posts inline plus summary comments. State whether the PR is standalone or part of an integration bundle — without that context the agent flags planned gaps as criticals. Do not review ad-hoc in chat. Respect pr-comment-action-scope for change-requesting comments."
+    },
+    {
+      "id": "issue-authoring",
+      "target": "agent:claude-tools:scrum-master (or claude-tools:business-analyst for PRD breakdown)",
+      "when": [
+        "\\b(create|open|file|raise|write|draft)\\b[\\s\\S]{0,40}\\b(issue|ticket|epic|user story|sub-?task)\\b",
+        "\\b(break (this|it) down|breakdown)\\b[\\s\\S]{0,40}\\b(into|to)\\b[\\s\\S]{0,30}\\b(tickets|issues|stories|tasks)\\b"
+      ],
+      "unless": [
+        "\\b(don'?t create|no ticket|no issue|without a ticket|without an issue|skip the ticket|skip the issue)\\b"
+      ],
+      "message": "Issue authoring goes through the claude-tools:scrum-master agent (or claude-tools:business-analyst when starting from a PRD). It resolves owner/repo through claude-tools:github-context, then follows the claude-tools:github-issues skill for labels, size estimate and body shape. Use the gh CLI — do not hand-roll the REST call."
+    },
+    {
+      "id": "testing",
+      "target": "agent:claude-tools:qa-automation + skill:claude-tools:testing-conventions",
+      "when": [
+        "\\b(write|add|create|generate)\\b[\\s\\S]{0,40}\\b(tests?|specs?|test coverage|unit tests?|integration tests?|e2e)\\b",
+        "\\b(tests?|specs?)\\b[\\s\\S]{0,30}\\bfor (this|the|that)\\b"
+      ],
+      "unless": [
+        "\\b(run the tests|tests are failing|why (is|are) (the )?tests?|fix the test)\\b"
+      ],
+      "message": "Test authoring goes to the claude-tools:qa-automation agent, which follows claude-tools:testing-conventions — integration over unit for routes and repos, real infrastructure over mocks, no logger stubs, only external services stubbed. Tests must be able to actually fail."
+    },
+    {
+      "id": "flaky-test",
+      "target": "skill:claude-tools:testing-conventions",
+      "when": [
+        "\\bflak(y|e|iness)\\b",
+        "\\b(re-?run|re-?queue|retry)\\b[\\s\\S]{0,30}\\b(ci|build|pipeline|tests?)\\b"
+      ],
+      "unless": [
+        "\\b(explain|what is|how do I write)\\b"
+      ],
+      "message": "claude-tools:testing-conventions is explicit that a failing test is real until proven otherwise. Before calling anything flaky: reproduce the exact spec locally, re-run for determinism, compare against the base branch, and name the actual mechanism. Re-queueing CI to get green without a root cause hides a regression."
+    },
+    {
+      "id": "architecture",
+      "target": "agent:claude-tools:solution-architect",
+      "when": [
+        "\\b(system design|architecture|split (the )?service|decouple|database schema|data identity|caching (design|strategy))\\b"
+      ],
+      "unless": [
+        "\\b(explain|what is|how does|remind me)\\b"
+      ],
+      "message": "This is solution-architect territory (service boundaries, schema and caching design). Delegate to the claude-tools:solution-architect agent rather than designing inline. It stays advisory — design and diagrams, then hand implementation to senior-developer and test design to qa-automation."
+    },
+    {
+      "id": "prior-art",
+      "target": "rule:prior-art-first",
+      "when": [
+        "\\b(map(ping)?|resolve|lookup|look up|parse|parser|handler)\\b[\\s\\S]{0,60}\\b(tenant|integration|project|field|path|config)\\b",
+        "\\bhelper\\b[\\s\\S]{0,40}\\b(for|to)\\b"
+      ],
+      "unless": [
+        "\\b(explain|what does|how does)\\b"
+      ],
+      "message": "prior-art-first applies: before drafting a new helper, grep the *concept* (field / path / operation being resolved) across sibling handlers, common/ and helpers/ folders, and the largest file in the area. Try two or three keyword variations before concluding there is no prior art. Lift the existing pattern rather than converging on a worse API."
+    },
+    {
+      "id": "planning",
+      "target": "skill:claude-tools:plan-workflow",
+      "when": [
+        "\\b(plan (this|it|the)|make a plan|design (an|the) approach|how should we approach)\\b"
+      ],
+      "unless": [
+        "\\b(no plan|skip the plan|just do it|don'?t plan)\\b"
+      ],
+      "message": "Invoke the claude-tools:plan-workflow skill for structured planning and alignment before implementation. Scale the Phase 3 coverage review to the risk — a small, well-understood change does not need three specialist agents."
+    },
+    {
+      "id": "chat",
+      "target": "rule:chat-formatting (+ skill:claude-tools:deslop, claude-tools:chat-nontechnical)",
+      "when": [
+        "\\b(discord|post (a|the) message|announce|announcement|discussion post)\\b"
+      ],
+      "unless": [
+        "\\b(read|search|check|what did|who said|thread)\\b"
+      ],
+      "message": "Posting to Discord or GitHub Discussions: follow the chat-formatting rule for the three-line header (headline / issue / PR), the Unicode emoji set, and <…> URL wrapping so Discord does not stack preview cards. Run the prose through claude-tools:deslop. If the reader is non-technical, use claude-tools:chat-nontechnical."
+    },
+    {
+      "id": "refactor",
+      "target": "skill:claude-tools:refactor-flow",
+      "when": [
+        "\\b(refactor|consolidat(e|ion)|restructure|extract (a|the) (shared|common))\\b"
+      ],
+      "unless": [
+        "\\b(explain|what is|already refactored)\\b"
+      ],
+      "message": "Per execution-style and claude-tools:refactor-flow: a refactor branch comes from the BASE branch (dev / master / main), never from a feature branch. Invoke claude-tools:refactor-flow to sequence the merge into dependent feature branches afterwards."
+    },
+    {
+      "id": "deploy-check",
+      "target": "skill:claude-tools:deploy-status",
+      "when": [
+        "\\b(is (staging|prod|production) (up|down|healthy)|deploy status|what'?s (live|deployed)|did the deploy)\\b",
+        "\\b(tail|check)\\b[\\s\\S]{0,25}\\b(staging|prod|production) logs?\\b"
+      ],
+      "unless": [
+        "\\b(local|localhost|how do I deploy)\\b"
+      ],
+      "message": "Use the claude-tools:deploy-status skill — it resolves the project's deploy config from projects.<key> and reports VM/container state, the live commit, /api/health and recent errors. Do not hand-roll gcloud calls; if auth fails, claude-tools:gcloud-auth re-authenticates in the right Chrome profile."
+    }
+  ]
+}
