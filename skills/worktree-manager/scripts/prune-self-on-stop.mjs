@@ -1,16 +1,15 @@
 #!/usr/bin/env node
-// Claude Code Stop-hook: if the session ran inside a worktree whose branch is
-// already merged into origin/<base>, prune the worktree + branch + dir.
+// Claude Code SessionEnd hook: if the session ran inside a worktree whose
+// branch is already merged into origin/<base>, prune the worktree + branch + dir.
 //
 // Conservative: never touches main, never prunes unmerged or dirty branches,
-// silent on every guardrail miss so it's safe on every Stop event.
+// silent on every guardrail miss so it's safe on every session end.
 //
-// Wired via ~/.claude/settings.json:
-//   "hooks": {
-//     "Stop": [
-//       { "hooks": [{ "type": "command", "command": "node ~/.claude/skills/worktree-manager/scripts/prune-self-on-stop.mjs" }] }
-//     ]
-//   }
+// Not wired by default. To enable, add a SessionEnd hook to the plugin's
+// hooks/hooks.json (or to your own settings.json):
+//   "SessionEnd": [
+//     { "hooks": [{ "type": "command", "command": "node ${CLAUDE_PLUGIN_ROOT}/skills/worktree-manager/scripts/prune-self-on-stop.mjs" }] }
+//   ]
 //
 // Env vars:
 //   CLAUDE_PROJECT_DIR  the session's primary working directory (set by harness)

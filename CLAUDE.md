@@ -145,7 +145,11 @@ The `!` prefix runs the command at the user level and pipes the output back into
 
 ## Protected branches
 
-Never make direct edits on `dev`, `master`, or `main`. Always work from a task branch.
+Never make direct edits on `dev`, `develop`, `master`, or `main`. Always work from a task branch.
+
+Don't route around this with a shell write either — a heredoc, `>` redirect, `sed -i`, or `cp` into a base-branch checkout is the same edit wearing a disguise. The rule is "no writes to a base branch", whatever tool makes the write.
+
+Carve-out: machine config (`.claude-personal/settings.local.json`) and anything under `.git/` stay writable on a base branch, since those aren't product code.
 
 ## node-import-style
 

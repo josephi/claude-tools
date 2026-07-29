@@ -134,10 +134,16 @@ const RENAMED_ADAPTATIONS = {
 // upstream drifts, so the divergence can be re-merged by hand. Keys are
 // source-side `<kind>/<name>`.
 //   - rules/pr-review-via-agent.md : personal-only "Standalone vs integration" section
+//   - rules/git-per-task.md        : upstream enforcement prose is tip-sync-specific
 //   - skills/plan-workflow         : Jira handoff paragraph rewritten for GitHub Issues
+//   - skills/deslop                : trigger list uses Discord / GitHub Issues
+//   - skills/worktree-manager      : prune hook is opt-in here, not wired by default
 const PROTECTED_LOCAL = new Set([
   'rules/pr-review-via-agent.md',
+  'rules/git-per-task.md',
   'skills/plan-workflow',
+  'skills/deslop',
+  'skills/worktree-manager',
 ]);
 
 const stats = {

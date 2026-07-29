@@ -1,6 +1,6 @@
 ---
 name: deslop
-description: Remove AI writing patterns from prose so it reads like a specific human wrote it. TRIGGER when drafting or reviewing any text meant for a human audience — PR descriptions, PR inline comments, Slack messages, Jira descriptions and comments, RCA narratives, technical documentation. SKIP for code, log messages, config, or anything where the goal is mechanical correctness rather than prose quality.
+description: Remove AI writing patterns from prose so it reads like a specific human wrote it. TRIGGER when writing, updating, or reviewing any text meant for a human audience — PR descriptions, PR inline comments, Discord messages, GitHub Issue descriptions and comments, READMEs and other repo docs, RCA narratives, technical documentation. Applies when the prose is merely requested ("update the doc with this"), not only when it is being drafted in front of you. SKIP for code, log messages, config, or anything where the goal is mechanical correctness rather than prose quality.
 model: haiku
 tags: [audience/personal, portable/verbatim]
 ---
