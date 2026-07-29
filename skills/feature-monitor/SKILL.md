@@ -1,15 +1,12 @@
 ---
 name: feature-monitor
 description: >-
-  Verify a SPECIFIC feature works correctly in production after a release — no regressions — and measure
-  the metric it was built to move. Instruments the feature with resolution anchors, runs a correctness
-  signal-sweep (fail-loud invariant, contract integrity, round-trip persistence, mechanism effectiveness,
-  adjacent-path parity, edge warnings), compares resolved VALUES pre-vs-post using whatever pre-change
-  ground truth exists, and quantifies the goal metric normalized per unit of work against a same-time-of-day
-  baseline. TRIGGER when the user asks to monitor/verify a specific feature after release, confirm a feature
-  still behaves as it did before a change, prove a feature has no behavioral regression, or measure a
-  feature's intended impact (request/latency/cost reduction, hit-ratio, throughput). SKIP for whole-release
-  rollout health (use post-deploy-monitor), local runs, or one-off single-metric lookups.
+  Verify a SPECIFIC feature works correctly in production after release and measure the metric it was
+  built to move. Runs a correctness sweep (invariants, contract integrity, round-trip persistence,
+  adjacent-path parity), compares resolved values pre- vs post-change, and normalizes the goal metric
+  against a same-time-of-day baseline. TRIGGER when asked to verify or monitor one feature after
+  release, prove it has no behavioral regression, or measure its intended impact. SKIP for whole-release
+  rollout health (use post-deploy-monitor), local runs, or one-off metric lookups.
 model: sonnet
 tags: [audience/personal, portable/verbatim]
 ---

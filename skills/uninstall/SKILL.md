@@ -9,10 +9,10 @@ description: >-
   placeholders it overwrote. TRIGGER when the user uninstalls the claude-tools plugin
   or asks to remove its rules and settings. SKIP when neither the marker block nor
   the ownership record is present.
-tags: [audience/work, portable/none]
+tags: [audience/personal, portable/adapt]
 ---
 
-# Tip-sync uninstall
+# claude-tools uninstall
 
 Reverses `/claude-tools:setup`. The goal is not "delete everything claude-tools-shaped" but "leave the user with what they had before setup ran". Those differ wherever the user already had a value, or edited one afterwards.
 
@@ -109,12 +109,14 @@ State what was removed, what was restored, and what was deliberately left. Inclu
 Then the parts this cannot do:
 
 - **`/plugin uninstall claude-tools@josephi-claude-tools`** removes the plugin itself, including its hooks. Until that runs, the hooks are still active.
-- **`CONFIG_DIR/settings.json`** is not touched. If `sync.mjs` symlinked it to the repo, the user removes that themselves.
-- **The claude.ai-hosted MCP integrations** (Jira, Confluence, Slack) were never installed by this plugin, so there is nothing to undo. Leave them.
+- **`CONFIG_DIR/settings.json`** is not touched. Everything setup wrote went to `settings.local.json`.
+- **`projects.<key>`** in `settings.local.json` is the user's own project registry, written by the `personal-projects` skill rather than by setup. Never remove it.
+- **The `chrome-devtools` MCP server** is declared in the plugin's `.mcp.json`, so it disappears with `/plugin uninstall`. Nothing to undo by hand.
+- **`gh` and `gcloud` credentials** were never written by this plugin. Leave them.
 - **Restart Claude Code** so the removals take effect.
 
 ## What this skill does NOT do
 
 - Does not remove the plugin — that's `/plugin uninstall`.
 - Does not touch anything absent from the ownership record. Silence there means "not ours".
-- Does not remove skills, agents, or commands from `CONFIG_DIR`. Any there came from the legacy `sync.mjs` path, and `/claude-tools:setup` step 2 handles those from its own manifest.
+- Does not remove skills, agents, or commands from `CONFIG_DIR`. This plugin never copies any there — they load from the plugin cache, which `/plugin uninstall` clears.

@@ -1,0 +1,15 @@
+{
+  "name": "claude-tools",
+  "version": "1.1.0",
+  "private": true,
+  "description": "Personal Claude Code plugin — rules, skills, agents and hooks.",
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/test.mjs",
+    "lint": "node scripts/lint.mjs",
+    "build": "node generate-claude-md.mjs",
+    "import": "node import.mjs",
+    "eval": "node scripts/eval-triggers.mjs"
+  },
+  "license": "MIT"
+}

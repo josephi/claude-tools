@@ -1,6 +1,11 @@
 ---
 name: personal-projects
-description: Manage entries in ~/.claude-personal/settings.local.json under `projects.<key>` — add a new project with all its topics (gcloud, github, chrome, app, deploy), list existing projects, show one, validate that the config matches reality, or update a single field. TRIGGER when the user says "add a new project", "register this project", "show my projects", "validate the X project config", "what's in my project config", "update the project's <field>", or when another skill needs project metadata that doesn't exist yet. SKIP for routine project work that just *reads* config — that's the sibling skills' job.
+description: >-
+  Manage `projects.<key>` entries in the personal settings.local.json — add a project with its topics
+  (gcloud, github, chrome, app, deploy), list, show, validate against reality, or update one field.
+  TRIGGER when the user says "add a new project", "register this project", "show my projects",
+  "validate the X project config", or when another skill needs project metadata that does not exist yet.
+  SKIP for routine work that only *reads* config — that is the sibling skills' job.
 model: sonnet
 tags: [audience/personal, portable/verbatim]
 ---

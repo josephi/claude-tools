@@ -1,15 +1,12 @@
 ---
 name: post-deploy-monitor
 description: >-
-  Monitor a production release deploy end to end for any project. Detects each service rolling out,
-  runs per-service health checks against the project's observability stack (logs, APM/metrics, custom
-  metrics, infra), announces progress and release notes to Discord / GitHub Discussions, watches for
-  anomalies on a cadence and escalates only confirmed ones, and produces a post-deploy health /
-  feature-impact report. TRIGGER when the user says a release is deploying or deployed, asks to monitor
-  or watch a rollout, do a post-deploy check, or verify release health after a deploy. Pair with the
-  `deploy-status` skill and the project's entry in the personal-projects config for the concrete service
-  list, deploy-detection, tool query recipes, and channels. SKIP for local runs, one-off single-metric
-  lookups, or pre-deploy work.
+  Monitor a production release end to end. Detects each service rolling out, runs per-service health
+  checks against the project's observability stack, announces progress to Discord / GitHub Discussions,
+  watches for anomalies on a cadence and escalates only confirmed ones, then reports on release health.
+  TRIGGER when the user says a release is deploying or deployed, or asks to watch a rollout or do a
+  post-deploy check. Pair with deploy-status and the personal-projects config. SKIP for local runs,
+  one-off metric lookups, or pre-deploy work.
 model: sonnet
 tags: [audience/personal, portable/verbatim]
 ---

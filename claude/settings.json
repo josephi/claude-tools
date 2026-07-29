@@ -1,0 +1,37 @@
+{
+  "$comment": "Recommended settings the setup skill offers to merge into <config-dir>/settings.local.json. Nothing here is applied automatically — setup asks first, and never touches an existing permissions.deny block. The deny list encodes the destructive operations the git-per-task rule already forbids in prose, so a slip cannot reach the repo.",
+  "permissions": {
+    "allow": [
+      "Bash(gh *)",
+      "Bash(git *)",
+      "Bash(node *)",
+      "Bash(npm *)",
+      "Bash(jq *)",
+      "Bash(mkdir *)",
+      "Bash(which *)",
+      "Bash(grep *)",
+      "Bash(find *)",
+      "Bash(ls *)",
+      "Bash(wc *)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean -f*)",
+      "Bash(git clean -d*)",
+      "Bash(git branch -d main)",
+      "Bash(git branch -d master)",
+      "Bash(git branch -d dev)",
+      "Bash(git branch -d develop)",
+      "Bash(git branch -D main)",
+      "Bash(git branch -D master)",
+      "Bash(git branch -D dev)",
+      "Bash(git branch -D develop)",
+      "Bash(git checkout -- *)",
+      "Bash(rm -rf*)",
+      "Bash(rm -r /*)",
+      "Bash(sudo*)"
+    ]
+  }
+}
