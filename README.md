@@ -76,7 +76,7 @@ hooks/lib/          shared helpers (issue-ref, task-context, shell parsing)
 scripts/            test runner, linter, trigger eval
 claude/settings.json  recommended permissions setup offers to merge
 commands/           slash command prompts (placeholder)
-bin/                shell helpers installed to ~/bin (project-key, project-cfg)
+bin/                shell helpers (project-key, project-cfg), called from skills as ${CLAUDE_SKILL_DIR}/../../bin
 pending-adaptation/ staging area for items pulled from the work repo
 CLAUDE.md           compiled plugin context (generated from rules/)
 CHANGELOG.md        read by check-init to report what changed after an update
@@ -118,7 +118,7 @@ Several skills (`personal-projects`, `github-context`, `gcloud-auth`, `chrome-de
 ```
 
 - **Writer:** `personal-projects` skill — add, list, show, validate, update.
-- **Readers:** the rest. Resolution goes through two shell helpers in `bin/` (installed to `~/bin/`):
+- **Readers:** the rest. Resolution goes through two shell helpers in the plugin's `bin/` (skills call them via `${CLAUDE_SKILL_DIR}/../../bin`, nothing is installed to `~/bin`):
   - `project-key` — cwd basename → matching key (exact, then `match[]` globs).
   - `project-cfg <key> <topic> [<field>…]` — read any value (scalars raw, arrays space-joined, objects pretty JSON).
 

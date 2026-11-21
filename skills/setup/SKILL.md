@@ -126,10 +126,12 @@ It writes `CONFIG_DIR/bench-statusline.mjs` and prints the exact `statusLine` co
 {
   "statusLine": {
     "type": "command",
-    "command": "node \"<CONFIG_DIR>/bench-statusline.mjs\""
+    "command": "<the command install-launcher.mjs printed>"
   }
 }
 ```
+
+Use the printed command as is: under the home folder it is `node "$HOME/…/bench-statusline.mjs"`, so one settings file works on a Mac and in a container that share it.
 
 **Point it at the launcher, never at the plugin cache directly.** The cache is version-namespaced (`plugins/cache/<marketplace>/bench/<version>/`), so a direct path bakes a version into the user's settings and the statusline breaks on the next update. The launcher resolves the newest installed version at run time, so this line is written once and never needs revisiting. It also prints nothing when the plugin is uninstalled, leaving a blank statusline rather than an error.
 

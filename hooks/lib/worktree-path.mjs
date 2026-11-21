@@ -3,6 +3,7 @@
 // hand-run `git worktree add ../x` from scattering checkouts next to the repo.
 
 import { basename, join, resolve, isAbsolute, relative, sep } from 'node:path';
+import { homedir } from 'node:os';
 import { mainCheckout } from './task-context.mjs';
 import { maskShellSyntax, shellTokens } from './shell-command.mjs';
 
@@ -54,6 +55,14 @@ function parseWorktreeAdd(words) {
   return { path: null, gitDir };
 }
 
+function expandHome(value) {
+  return value === '~' || value.startsWith('~/') ? join(homedir(), value.slice(1)) : value;
+}
+
+function isOtherUsersHome(value) {
+  return value.startsWith('~') && expandHome(value) === value;
+}
+
 /**
  * Every `git worktree add` in a command line, with its path word and any `-C` dir.
  * Words carry `unresolvable` when they contain an expansion.
@@ -81,14 +90,14 @@ export function misplacedWorktreeAdd(command, cwd, resolveMain = mainCheckout) {
   if (/(^|[\s;&|(])(cd|pushd)\s/.test(maskShellSyntax(command ?? ''))) return null;
 
   for (const { path, gitDir } of worktreeAdds(command)) {
-    if (path.unresolvable || path.value.startsWith('~')) continue;
-    if (gitDir && (gitDir.unresolvable || gitDir.value.startsWith('~'))) continue;
+    if (path.unresolvable || isOtherUsersHome(path.value)) continue;
+    if (gitDir && (gitDir.unresolvable || isOtherUsersHome(gitDir.value))) continue;
 
-    const base = gitDir ? resolve(cwd, gitDir.value) : cwd;
+    const base = gitDir ? resolve(cwd, expandHome(gitDir.value)) : cwd;
     const main = resolveMain(base);
     if (!main) continue;
 
-    const target = resolve(base, path.value);
+    const target = resolve(base, expandHome(path.value));
     if (isInsideWorktreesRoot(target, main)) continue;
 
     return { target, expected: join(worktreesRoot(main), basename(target)) };

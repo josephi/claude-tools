@@ -17,7 +17,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
-import { install, launcherPath, configDir, LAUNCHER_SOURCE, LAUNCHER_NAME } from './install-launcher.mjs';
+import { install, launcherPath, configDir, statusLineCommand, LAUNCHER_SOURCE, LAUNCHER_NAME } from './install-launcher.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, 'install-launcher.mjs');
@@ -233,6 +233,16 @@ step('--json reports what it did', () => {
 
 step('human output gives the statusLine command to use', () => {
   assert.match(cli(cfgDir()), /node .*bench-statusline\.mjs/);
+});
+
+step('statusLine command is home-relative so a shared settings file works on every machine', () => {
+  assert.equal(statusLineCommand('/home/a/.cfg/bench-statusline.mjs', '/home/a', 'linux'),
+    'node "$HOME/.cfg/bench-statusline.mjs"');
+});
+
+step('statusLine command stays absolute outside home and on Windows', () => {
+  assert.equal(statusLineCommand('/opt/cfg/bench-statusline.mjs', '/home/a', 'linux'), 'node "/opt/cfg/bench-statusline.mjs"');
+  assert.equal(statusLineCommand('C:\\Users\\a\\.claude\\x.mjs', 'C:\\Users\\a', 'win32'), 'node "C:\\Users\\a\\.claude\\x.mjs"');
 });
 
 for (const d of temps) rmSync(d, { recursive: true, force: true });

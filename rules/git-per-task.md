@@ -21,6 +21,8 @@ git worktree add .claude/worktrees/feat-42 -b feat/42_short-goal
 
 This holds in every project, even when its own docs show a sibling path like `../<repo>-feat-42`. Make sure `.claude/worktrees/` is in the project's `.gitignore`. The bench guard denies a `git worktree add` anywhere else; `BENCH_ALLOW_ANY_WORKTREE_PATH=1` lifts it.
 
+A worktree is not kept for its own sake. When its task merges, remove it with its branch and its Compose stacks; when a session stops on an open task, its stacks come down and the worktree stays. The `SessionEnd` hook does both unless `<repo>/.claude/worktrees/<name>.keep-docker` exists, which you write when the user asks to keep a stack running. See `task-completion`.
+
 ## Between implementation and commit
 
 Stage the change, then let the user review the staged diff before the commit when the change is non-trivial. Use `git diff --cached` to review.

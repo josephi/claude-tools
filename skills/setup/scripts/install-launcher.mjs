@@ -16,7 +16,7 @@
 //   node install-launcher.mjs [--print-path] [--json]
 
 import { writeFileSync, mkdirSync, readFileSync, existsSync, renameSync, chmodSync } from 'node:fs';
-import { join } from 'node:path';
+import { join, relative, isAbsolute, sep } from 'node:path';
 import { homedir } from 'node:os';
 import { pathToFileURL } from 'node:url';
 import { argv, env, stdout, exit } from 'node:process';
@@ -80,6 +80,15 @@ const mod = await import(pathToFileURL(target).href);
 if (typeof mod.main === 'function') await mod.main();
 `;
 
+// A home-relative command keeps one settings file valid on every machine that
+// shares it (a Mac and a container mounting the same config, for example).
+export function statusLineCommand(path, home = homedir(), platform = process.platform) {
+  const rel = relative(home, path);
+  const insideHome = rel && !rel.startsWith('..') && !isAbsolute(rel);
+  if (platform === 'win32' || !insideHome) return `node "${path}"`;
+  return `node "$HOME/${rel.split(sep).join('/')}"`;
+}
+
 export function install(cfg = configDir()) {
   const path = launcherPath(cfg);
   const existing = existsSync(path) ? readFileSync(path, 'utf8') : null;
@@ -109,7 +118,7 @@ function main() {
     stdout.write(`statusline launcher ${res.reason}: ${res.path}\n`);
     stdout.write('Point settings.local.json statusLine at:\n');
     // Quoted: the config dir can contain spaces (C:\Users\First Last\.claude).
-    stdout.write(`  node "${res.path}"\n`);
+    stdout.write(`  ${statusLineCommand(res.path)}\n`);
     stdout.write('That path is stable across plugin updates.\n');
   }
   exit(0);

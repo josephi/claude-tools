@@ -228,11 +228,15 @@ step('has no opinion on what it cannot judge', () => {
   for (const c of [
     'git worktree list',
     'git worktree add "$DIR" -b x',
-    'git worktree add ~/wt/x',
+    'git worktree add ~other/wt/x',
     'cd /tmp && git worktree add x',
     'echo "git worktree add ../x"',
   ]) assert.equal(judgeAdd(c), null, c);
   assert.equal(judgeAdd('git worktree add ../x', '/elsewhere'), null);
+});
+
+step('expands ~ instead of waving the path through', () => {
+  assert.equal(judgeAdd('git worktree add ~/wt/x').permissionDecision, 'deny');
 });
 
 step('BENCH_ALLOW_ANY_WORKTREE_PATH lifts it', () => {

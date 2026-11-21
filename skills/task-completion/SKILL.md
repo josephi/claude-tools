@@ -71,6 +71,28 @@ Stop conditions: PR merged, PR closed, or the user stops the loop manually.
 - The linked issue auto-closes via the `Closes #<num>` in the PR body. Verify with `gh issue view <num> --json state`.
 - If the implementation deviated from the original design, add a comment on the issue explaining the deviation. Post a brief follow-up to the project's general/announcements channel summarizing the change.
 - Delete the local branch: `git switch main && git pull && git branch -d <branch>` (the remote branch was deleted by `gh pr merge --delete-branch`).
+- **Clean up what the task started**, right away, without asking:
+  1. Its Compose stacks, found by the folder they were started from. Run each command on its own line (a `docker` command inside `$(…)`, `&&` or a pipe runs sandboxed and cannot reach the socket):
+     ```sh
+     docker ps -a --filter label=com.docker.compose.project.working_dir=<worktree path> --format '{{.Label "com.docker.compose.project"}}'
+     docker compose -p <project> down --volumes --rmi local --remove-orphans
+     ```
+  2. Its worktree and branch: `git -C <main checkout> worktree remove <worktree path>`, then `git -C <main checkout> branch -D <branch>`.
+  3. Say in one line what was removed.
+
+  If the user asked to keep the stack running, skip step 1 and write the keep marker instead (see below). Anything missed here is caught by the `SessionEnd` cleanup.
+
+## When the session stops before the task is done
+
+The `SessionEnd` hook (`worktree-manager/scripts/session-end-cleanup.mjs`) takes down the Compose stacks of every worktree this session worked in, and removes worktrees whose branch is merged and clean. The worktree of an open task stays; only its containers, volumes and built images go. A stack started from another worktree, or from the main checkout, is never touched.
+
+When the user says to keep a stack ("leave it running", "I'm using it"), write the keep marker so the hook leaves that worktree and its stack alone:
+
+```sh
+touch <main checkout>/.claude/worktrees/<worktree name>.keep-docker
+```
+
+Remove the marker when the user is done with it. The hook logs what it did to `<main checkout>/.claude/worktrees/.bench-cleanup.log`; `node <plugin>/skills/worktree-manager/scripts/session-end-cleanup.mjs --dry-run` (from the repo) shows what it would do.
 
 ## What not to do
 

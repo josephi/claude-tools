@@ -14,13 +14,13 @@ This is the personal-stack counterpart to the work `coralogix-dashboards` skill.
 ## Reading the context
 
 ```sh
-KEY=$(~/bin/project-key)
-PROJECT=$(~/bin/project-cfg "$KEY" gcloud projectId)
-PLATFORM=$(~/bin/project-cfg "$KEY" deploy platform)
-PROD_NAME=$(~/bin/project-cfg "$KEY" deploy prod name    2>/dev/null || true)
-STG_NAME=$(~/bin/project-cfg  "$KEY" deploy staging name 2>/dev/null || true)
-PROD_ZONE=$(~/bin/project-cfg "$KEY" deploy prod zone    2>/dev/null || true)
-PROD_CTR=$(~/bin/project-cfg  "$KEY" deploy prod containerName 2>/dev/null || true)
+KEY=$("${CLAUDE_SKILL_DIR}/../../bin/project-key")
+PROJECT=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" gcloud projectId)
+PLATFORM=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy platform)
+PROD_NAME=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod name    2>/dev/null || true)
+STG_NAME=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" deploy staging name 2>/dev/null || true)
+PROD_ZONE=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod zone    2>/dev/null || true)
+PROD_CTR=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" deploy prod containerName 2>/dev/null || true)
 ```
 
 If `gcloud.projectId` is missing, defer to `personal-projects` to add it. If a `gcloud` call returns a reauth error, use `gcloud-auth` — do not retry the same command.

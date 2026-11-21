@@ -7,6 +7,7 @@
 //
 // Usage: node ownership.test.mjs
 
+import { homedir } from 'node:os';
 import {
   mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, rmSync,
   chmodSync, statSync,
@@ -155,6 +156,13 @@ step('a repointed statusLine is still revertable after a re-run', () => {
   writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: cmd } } });
   assert.equal(planRevert(cfg, data).statusLine.action, 'remove',
     'must not be skipped as user-modified for a command we wrote');
+});
+
+step('a statusLine rewritten to the $HOME form still counts as ours', () => {
+  const abs = `node "${homedir()}/.cfg/bench-statusline.mjs"`;
+  const { cfg, data } = fixture({ statusLine: { type: 'command', command: 'node "$HOME/.cfg/bench-statusline.mjs"' } });
+  writeRecord(data, { settingsLocal: { statusLine: { action: 'added', wroteValue: abs } } });
+  assert.equal(planRevert(cfg, data).statusLine.action, 'remove');
 });
 
 step('deny entries union across runs instead of keeping only the first', () => {

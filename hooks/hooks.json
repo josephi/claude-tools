@@ -1,5 +1,5 @@
 {
-  "$comment": "Every hook sets an explicit timeout. All of them fail open — exit 0 with no output on any internal error — because a hard failure would make the repo unwritable (guard) or cost the user their prompt (route, since exit 2 on UserPromptSubmit erases it).",
+  "$comment": "Every hook sets an explicit timeout. All of them fail open \u2014 exit 0 with no output on any internal error \u2014 because a hard failure would make the repo unwritable (guard) or cost the user their prompt (route, since exit 2 on UserPromptSubmit erases it).",
   "hooks": {
     "SessionStart": [
       {
@@ -77,8 +77,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node ${CLAUDE_PLUGIN_ROOT}/skills/worktree-manager/scripts/prune-self-on-stop.mjs",
-            "timeout": 10
+            "command": "node ${CLAUDE_PLUGIN_ROOT}/skills/worktree-manager/scripts/session-end-cleanup.mjs",
+            "timeout": 60
           }
         ]
       }

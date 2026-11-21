@@ -12,19 +12,19 @@ Health and activity reporting for the current project's deployments. Reads `proj
 ## Reading the deploy context
 
 ```sh
-KEY=$(~/bin/project-key)
-PLATFORM=$(~/bin/project-cfg "$KEY" deploy platform)
-PROD_NAME=$(~/bin/project-cfg "$KEY" deploy prod name 2>/dev/null || true)
-STG_NAME=$(~/bin/project-cfg  "$KEY" deploy staging name 2>/dev/null || true)
-PROD_IP=$(~/bin/project-cfg   "$KEY" deploy prod ip      2>/dev/null || true)
-STG_IP=$(~/bin/project-cfg    "$KEY" deploy staging ip   2>/dev/null || true)
-PROD_ZONE=$(~/bin/project-cfg "$KEY" deploy prod zone    2>/dev/null || true)
-STG_ZONE=$(~/bin/project-cfg  "$KEY" deploy staging zone 2>/dev/null || true)
-PROD_CTR=$(~/bin/project-cfg  "$KEY" deploy prod containerName    2>/dev/null || true)
-STG_CTR=$(~/bin/project-cfg   "$KEY" deploy staging containerName 2>/dev/null || true)
-PROD_URL=$(~/bin/project-cfg  "$KEY" app prodUrl    2>/dev/null || true)
-STG_URL=$(~/bin/project-cfg   "$KEY" app stagingUrl 2>/dev/null || true)
-HEALTH=$(~/bin/project-cfg    "$KEY" app healthPath 2>/dev/null || echo "/api/health")
+KEY=$("${CLAUDE_SKILL_DIR}/../../bin/project-key")
+PLATFORM=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy platform)
+PROD_NAME=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod name 2>/dev/null || true)
+STG_NAME=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" deploy staging name 2>/dev/null || true)
+PROD_IP=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"   "$KEY" deploy prod ip      2>/dev/null || true)
+STG_IP=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"    "$KEY" deploy staging ip   2>/dev/null || true)
+PROD_ZONE=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod zone    2>/dev/null || true)
+STG_ZONE=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" deploy staging zone 2>/dev/null || true)
+PROD_CTR=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" deploy prod containerName    2>/dev/null || true)
+STG_CTR=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"   "$KEY" deploy staging containerName 2>/dev/null || true)
+PROD_URL=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"  "$KEY" app prodUrl    2>/dev/null || true)
+STG_URL=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"   "$KEY" app stagingUrl 2>/dev/null || true)
+HEALTH=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg"    "$KEY" app healthPath 2>/dev/null || echo "/api/health")
 ```
 
 If `deploy` topic is missing, defer to `personal-projects` to add it.

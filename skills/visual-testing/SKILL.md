@@ -24,8 +24,8 @@ If the project has no Playwright config, this skill is the wrong tool — say so
 ## Reading the context
 
 ```sh
-KEY=$(~/bin/project-key)
-LOCAL_URL=$(~/bin/project-cfg "$KEY" app localUrl 2>/dev/null || echo "http://localhost:5173")
+KEY=$("${CLAUDE_SKILL_DIR}/../../bin/project-key")
+LOCAL_URL=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" app localUrl 2>/dev/null || echo "http://localhost:5173")
 ```
 
 Screenshots come from a **locally running** app, not staging — you need both branches rendered under identical conditions, and staging only ever has one.
