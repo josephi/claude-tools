@@ -2,7 +2,7 @@
 # Resolve the personal-project key for the current cwd (or an arg).
 #
 # Usage:
-#   project-key                   # uses cwd's git repo basename
+#   project-key                   # uses the main checkout's basename (works from a worktree)
 #   project-key /path/to/repo     # uses that path's basename
 #   project-key A-clim-v2         # treats arg as the repo basename directly
 #
@@ -17,7 +17,11 @@ CFG="${PROJECTS_CFG:-$HOME/.claude-personal/settings.local.json}"
 
 target="${1:-}"
 if [ -z "$target" ]; then
-  target=$(git rev-parse --show-toplevel 2>/dev/null || true)
+  common=$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)
+  case "$common" in
+    */.git) target=$(dirname "$common") ;;
+    *) target=$(git rev-parse --show-toplevel 2>/dev/null || true) ;;
+  esac
 fi
 # If target looks like a path, take basename; otherwise treat as-is.
 case "$target" in

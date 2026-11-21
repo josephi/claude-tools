@@ -11,6 +11,19 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
 
+## [2.1.0] - 2026-10-17
+
+> Worktrees now live inside each repo at `.claude/worktrees/<name>`; the guard blocks `git worktree add` anywhere else.
+
+### Added
+
+- **Worktree location guard.** A `git worktree add` whose path is outside `<main-checkout>/.claude/worktrees` is denied, and the denial names the in-repo path to use instead. It applies to every project, including ones whose own docs show a sibling `../<repo>-<name>` path. `BENCH_ALLOW_ANY_WORKTREE_PATH=1` lifts it.
+- **`git-per-task` rule: Worktrees section** stating the location.
+
+### Fixed
+
+- **Project lookup from a worktree.** `projectKey`, `bin/project-key`, `github-context` and `gcloud-auth` resolved the project from the checkout's folder name, so `.claude/worktrees/feat-42` matched nothing. They now use the main checkout's name.
+
 ## [2.0.0] - 2026-07-29
 
 > Renamed from `claude-tools` to `bench` — the old name said nothing, and it prefixed every skill reference and env var.

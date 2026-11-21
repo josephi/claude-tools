@@ -42,9 +42,9 @@ Other skills (chrome-debug, gh-context, etc.) read from `projects.<key>.<topic>`
 
 1. **Resolve the project key.**
    - If user passed a key as args, use it.
-   - Else: `KEY=$(git rev-parse --show-toplevel 2>/dev/null | xargs -I{} basename {})` and look up by:
+   - Else: `KEY=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" | xargs -I{} basename {})` — the main checkout's name, so it resolves the same from a worktree under `.claude/worktrees/` — and look up by:
      - exact match against `projects.<name>`
-     - any `projects.<name>.match` glob that matches the repo basename
+     - any `projects.<name>.match` glob that matches that basename
    - If nothing matches: list available keys to the user and ask which one (or to add a new entry).
 
 2. **Read the project config.** Pull `gcloud.projectId`, `gcloud.account`, and `chrome.wrapper` out of `~/.claude-personal/settings.local.json`. Expand `~/` in the wrapper path before using it.

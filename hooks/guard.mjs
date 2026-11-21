@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Two jobs, both about surviving a long session:
+// Three jobs:
 //
 //   PreToolUse on a write tool or Bash — deny edits on a base branch (master/
 //     main/dev/develop) and point at task-start. This is the one place
@@ -9,6 +9,11 @@
 //     included because `cat > file` reaches the filesystem without any write
 //     tool, which left the rule resting on the deny message asking for
 //     compliance — the thing this hook exists to replace.
+//
+//   PreToolUse on Bash — deny a `git worktree add` outside
+//     <main-checkout>/.claude/worktrees, so every project keeps its worktrees
+//     inside the repo whatever its own docs say. BENCH_ALLOW_ANY_WORKTREE_PATH=1
+//     lifts it.
 //
 //   SessionStart (matcher "compact") — re-assert the non-negotiable rules plus
 //     the current task state. Compaction is where rule adherence decays;
@@ -29,8 +34,9 @@ import { pathToFileURL } from 'node:url';
 import { dirname, resolve, isAbsolute } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
 import { argv, env, stdin, stdout, exit, cwd as processCwd } from 'node:process';
-import { taskContext, branchContext, isBaseBranch } from './lib/task-context.mjs';
+import { taskContext, branchContext, isBaseBranch, mainCheckout } from './lib/task-context.mjs';
 import { bashWriteTargets } from './lib/bash-writes.mjs';
+import { misplacedWorktreeAdd } from './lib/worktree-path.mjs';
 
 const WRITE_TOOLS = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit']);
 
@@ -158,6 +164,31 @@ export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false,
   return null;
 }
 
+/**
+ * Deny a `git worktree add` whose target is outside <main-checkout>/.claude/worktrees.
+ *
+ * @param {(dir: string) => string|null} resolveMain injected for tests
+ * @returns {{permissionDecision: 'deny', permissionDecisionReason: string}|null}
+ */
+export function evaluateWorktreeAdd(payload, resolveMain, { allowAnywhere = false, cwd = '' } = {}) {
+  if (allowAnywhere) return null;
+  if ((payload.tool_name ?? payload.toolName) !== 'Bash') return null;
+
+  const input = payload.tool_input ?? payload.toolInput ?? {};
+  const command = typeof input.command === 'string' ? input.command : '';
+  const misplaced = misplacedWorktreeAdd(command, cwd || payload.cwd || '', resolveMain);
+  if (!misplaced) return null;
+
+  return {
+    permissionDecision: 'deny',
+    permissionDecisionReason:
+      `worktree location: "${misplaced.target}" is outside the repo. Worktrees live inside the main checkout, `
+      + `under .claude/worktrees — repeat the command with "${misplaced.expected}" as the path. `
+      + 'This applies even when the project docs show a sibling path like ../<repo>-<name>. '
+      + 'If a worktree genuinely belongs elsewhere, the user can set BENCH_ALLOW_ANY_WORKTREE_PATH=1.',
+  };
+}
+
 export function compactContext(ctx) {
   const rules = [
     'git-per-task: never edit on a base branch; push after every commit, no batching.',
@@ -212,7 +243,10 @@ async function main() {
         }
       }
     } else if ((payload.tool_name ?? payload.toolName) === 'Bash') {
-      const verdict = evaluateBashWrite(payload, branchContext, {
+      const verdict = evaluateWorktreeAdd(payload, mainCheckout, {
+        allowAnywhere: env.BENCH_ALLOW_ANY_WORKTREE_PATH === '1',
+        cwd: dir,
+      }) ?? evaluateBashWrite(payload, branchContext, {
         allowBaseEdits: env.BENCH_ALLOW_BASE_EDITS === '1',
         cwd: dir,
       });
