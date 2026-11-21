@@ -65,6 +65,10 @@ export function fingerprint(value) {
   return `sha256:${createHash('sha256').update(String(value), 'utf8').digest('hex')}`;
 }
 
+function expandHome(value) {
+  return typeof value === 'string' ? value.replaceAll('$HOME', homedir()) : value;
+}
+
 /**
  * True when `current` matches what we recorded, by value or by hash.
  *
@@ -74,7 +78,7 @@ export function fingerprint(value) {
  */
 export function matchesWritten(meta, current) {
   if (meta.wroteHash !== undefined) return fingerprint(current) === meta.wroteHash;
-  if (meta.wroteValue !== undefined) return current === meta.wroteValue;
+  if (meta.wroteValue !== undefined) return expandHome(current) === expandHome(meta.wroteValue);
   return false;
 }
 

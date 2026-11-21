@@ -17,7 +17,7 @@ Claude Code's worktree feature creates dirs with adjective-style names (`goofy-m
 4. **Generates a Zed launcher script** at `<repo>/.claude/open-in-zed.sh`.
 5. **Updates `.gitignore`** to keep the workspace file and zed launcher out of git.
 6. **Scans for an existing worktree** before creating a new one for a task.
-7. **Prunes worktrees whose branches were merged** (opt-in).
+7. **Prunes worktrees whose branches were merged** (opt-in), and the `SessionEnd` hook cleans up automatically: see "When the session stops before the task is done" in `task-completion`.
 
 ## When to invoke
 

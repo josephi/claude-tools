@@ -14,10 +14,10 @@ Personal-stack counterpart to the work `prometheus` skill. PromQL is replaced by
 ## Reading the context
 
 ```sh
-KEY=$(~/bin/project-key)
-PROJECT=$(~/bin/project-cfg "$KEY" gcloud projectId)
-PROD_NAME=$(~/bin/project-cfg "$KEY" deploy prod name 2>/dev/null || true)
-PROD_ZONE=$(~/bin/project-cfg "$KEY" deploy prod zone 2>/dev/null || true)
+KEY=$("${CLAUDE_SKILL_DIR}/../../bin/project-key")
+PROJECT=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" gcloud projectId)
+PROD_NAME=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod name 2>/dev/null || true)
+PROD_ZONE=$("${CLAUDE_SKILL_DIR}/../../bin/project-cfg" "$KEY" deploy prod zone 2>/dev/null || true)
 ```
 
 If a `gcloud` call returns a reauth error, use `gcloud-auth`. Do not retry the same command first — the failure is not transient.

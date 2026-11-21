@@ -11,6 +11,22 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
 
+## [2.2.0] - 2026-11-21
+
+> Bench cleans up after itself: merged worktrees and their Docker stacks go at session end, an open task's stacks stop, and everything works inside the claude-vm container.
+
+### Added
+
+- **Session-end cleanup** (`worktree-manager/scripts/session-end-cleanup.mjs`, replaces `prune-self-on-stop.mjs`). Removes every merged, clean worktree of the repo with its branch, and takes down its Compose stacks (containers, volumes, images they built). Stacks of worktrees this session worked in (ran in, or named in a `docker` command) come down even when the task is still open; the worktree and its data volumes stay. Merged worktrees with recent git activity from another session are left alone. Runs inside a 55 s budget with non-interactive git. Ownership comes from the compose working-dir label, so another session's stack is never touched. `<repo>/.claude/worktrees/<name>.keep-docker` keeps a worktree and its stack. Squash merges are detected. `--dry-run` shows the plan.
+- **task-completion: cleanup after merge.** Stacks, worktree and branch go right after the merge, not only at session end.
+
+### Changed
+
+- **Skills call the plugin's own `bin/` helpers** (`${CLAUDE_SKILL_DIR}/../../bin/project-key`) instead of `~/bin`, which only existed on one Mac.
+- **chrome-debug and gcloud-auth have a container path:** headless Chromium through the user-scope DevTools MCP, and `gcloud auth login --no-launch-browser` run by the user.
+- **Status line command is home-relative** (`node "$HOME/…/bench-statusline.mjs"`), so one settings file works on a Mac and in a container; the ownership check treats both forms as the same command.
+- **Worktree guard expands `~`** instead of letting a `~/…` path through unjudged.
+
 ## [2.1.0] - 2026-10-17
 
 > Worktrees now live inside each repo at `.claude/worktrees/<name>`; the guard blocks `git worktree add` anywhere else.

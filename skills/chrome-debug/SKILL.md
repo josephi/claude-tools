@@ -1,6 +1,6 @@
 ---
 name: chrome-debug
-description: Open the current project's app in the right Chrome profile and drive DevTools — read console, list network requests, take screenshots, evaluate JS, navigate, click, fill. Uses Chrome DevTools MCP tools under the hood. TRIGGER when the user says "debug the app", "open DevTools", "screenshot the app", "check the console", "look at the network tab", "load localhost in Chrome", "is the deploy actually working". SKIP for backend-only debugging or when no Chrome DevTools MCP tools are available.
+description: Open the current project's app in the right browser (headless Chromium in a container, the project's Chrome profile on a Mac) and drive DevTools — read console, list network requests, take screenshots, evaluate JS, navigate, click, fill. Uses Chrome DevTools MCP tools under the hood. TRIGGER when the user says "debug the app", "open DevTools", "screenshot the app", "check the console", "look at the network tab", "load localhost in Chrome", "is the deploy actually working". SKIP for backend-only debugging or when no Chrome DevTools MCP tools are available.
 model: sonnet
 tags: [audience/personal, portable/verbatim]
 ---
@@ -12,28 +12,43 @@ Drive the project's web app in the correct Chrome profile, so cookies/auth/exten
 ## Reading the project context
 
 ```sh
-KEY=$(~/bin/project-key)
-WRAPPER=$(eval echo "$(~/bin/project-cfg "$KEY" chrome wrapper)")
-PROFILE=$(~/bin/project-cfg "$KEY" chrome profile)
-LOCAL=$(~/bin/project-cfg   "$KEY" app localUrl   2>/dev/null || true)
-STAGING=$(~/bin/project-cfg "$KEY" app stagingUrl 2>/dev/null || true)
-PROD=$(~/bin/project-cfg    "$KEY" app prodUrl    2>/dev/null || true)
+BIN="${CLAUDE_SKILL_DIR}/../../bin"
+KEY=$("$BIN/project-key")
+LOCAL=$("$BIN/project-cfg"   "$KEY" app localUrl   2>/dev/null || true)
+STAGING=$("$BIN/project-cfg" "$KEY" app stagingUrl 2>/dev/null || true)
+PROD=$("$BIN/project-cfg"    "$KEY" app prodUrl    2>/dev/null || true)
 ```
 
-If the project has no `chrome` or `app` topic, defer to the `personal-projects` skill to add one before continuing.
+If the project has no `app` topic, defer to the `personal-projects` skill to add one before continuing.
 
-## Step 1 — Make sure Chrome is running in the right profile
+## Step 1 — Get a browser the MCP can drive
 
-The Chrome DevTools MCP attaches to the **most recently launched** Chrome window. To control which profile it inspects, launch with the wrapper first:
+Pick the branch by where the session runs (`uname -s`, and `/.dockerenv` exists in a container).
+
+### Container or Linux (claude-vm)
+
+There is no desktop Chrome and no profile. The user-scope `chrome-devtools` MCP launches a headless Chromium itself (`--executablePath /usr/local/bin/chromium --headless --isolated`), so skip launching anything:
+
+1. `new_page` with `$URL`.
+2. Screenshots work; there is no window for the user to look at, so show results as screenshots or text.
+3. A login the user must type cannot happen here. For a local stack prefer `SKIP_AUTH`; for staging or prod, ask the user to log in on their own machine and debug from the network evidence instead.
+4. A local stack's ports are on `localhost` for the MCP's Chromium (host networking).
+
+If `new_page` fails with "Could not find Google Chrome", the session is using a plugin-bundled DevTools MCP rather than the user-scope one; use `mcp__chrome-devtools__*` tools, not `mcp__plugin_*`.
+
+### macOS desktop
+
+The MCP attaches to the **most recently launched** Chrome window, so launch the project's profile first:
 
 ```sh
+WRAPPER=$(eval echo "$("$BIN/project-cfg" "$KEY" chrome wrapper)")
 "$WRAPPER" "$URL" &
-sleep 1.5    # let the window settle before DevTools attaches
+sleep 1.5
 ```
 
-Replace `$URL` with whichever environment the user wants (`$LOCAL`, `$STAGING`, `$PROD`).
-
 If Chrome is already open in a *different* profile and the MCP attaches to it, the inspection will be wrong. When in doubt, ask the user to fully quit Chrome first, then run the wrapper.
+
+Replace `$URL` with whichever environment the user wants (`$LOCAL`, `$STAGING`, `$PROD`).
 
 ## Step 2 — Use DevTools MCP tools
 
@@ -62,7 +77,7 @@ The DevTools tool schemas are deferred — load them as needed via `ToolSearch` 
 
 ### "Open the app and check for errors"
 
-1. Launch local: `"$WRAPPER" "$LOCAL" &`
+1. Open `$LOCAL` (Step 1 for this machine).
 2. `select_page` to the new tab.
 3. `wait_for` something that indicates the app finished hydrating (e.g. the project title).
 4. `list_console_messages` — filter to `error` and `warning`.
@@ -70,7 +85,7 @@ The DevTools tool schemas are deferred — load them as needed via `ToolSearch` 
 
 ### "Screenshot the staging deploy"
 
-1. `"$WRAPPER" "$STAGING" &`
+1. Open `$STAGING` (Step 1 for this machine).
 2. `wait_for` the main heading.
 3. `take_screenshot` and save to `./aclim-staging-<timestamp>.png` (these are gitignored by `aclim-*.png` per repo `.gitignore`).
 4. If the user asked to compare, repeat for `prod` and place screenshots side by side in a Markdown response.

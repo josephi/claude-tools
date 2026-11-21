@@ -49,7 +49,13 @@ Other skills (chrome-debug, gh-context, etc.) read from `projects.<key>.<topic>`
 
 2. **Read the project config.** Pull `gcloud.projectId`, `gcloud.account`, and `chrome.wrapper` out of `~/.claude-personal/settings.local.json`. Expand `~/` in the wrapper path before using it.
 
-3. **Verify wrapper exists.** `test -x "$WRAPPER"` — if missing, instruct the user to create it (see the `chrome.wrapper` value):
+   **In a container (`/.dockerenv` exists, claude-vm) there is no browser to open.** Skip steps 3–4 and give the user this to run themselves, since it is interactive (they open the URL on their own machine and paste the code back):
+   ```
+   ! gcloud auth login "$ACCOUNT" --no-launch-browser --update-adc
+   ```
+   Then continue with step 5. Everything after the login you run yourself.
+
+3. **Verify wrapper exists (macOS desktop).** `test -x "$WRAPPER"` — if missing, instruct the user to create it (see the `chrome.wrapper` value):
    ```sh
    cat > "$WRAPPER" <<EOF
    #!/bin/sh
