@@ -14,6 +14,8 @@ The agent:
 - Produces the standard severity-graded finding format
 - Posts inline and summary comments
 - Announces the review on Discord or GitHub Discussions when the PR is someone else's
+- Loads the owner's review principles first (`review-principles`: only comments new since the last review, folded into one user-level file), and checks architecture conformance, anti-patterns, conventions and design-pattern opportunities on every PR
+- Returns architecture deviations as decisions for the owner instead of posting them
 
 Ad-hoc chat reviews skip these steps and almost always miss findings the checklists catch.
 
