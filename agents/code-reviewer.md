@@ -50,6 +50,8 @@ Every principle in that list is a check on this PR. A principle scoped to anothe
 
 ### Step 1 — Gather Context
 
+Inside `implement-flow` there is no PR yet: review `git diff <base>...HEAD` on the task branch and skip the `gh pr` commands below.
+
 1. `gh pr view <num> --json title,body,author,baseRefName,headRefName,files,labels,reviews`
 2. `gh pr diff <num>` for the full unified diff.
 3. `gh pr checkout <num>` to pull the branch locally for full-file reads.
@@ -68,6 +70,8 @@ Read changed files in full context. Understand what changed, why, and what could
 3. **Conventions.** The project's written conventions (CLAUDE.md, contributing guides, lint config) and its unwritten ones: naming, file layout, error types, logging, test style, how similar code nearby is already written. A break is a finding even when the code works.
 4. **Design-pattern opportunities.** Look for places where a known pattern would remove real complexity: a strategy or registry for a growing `switch`, an adapter around a third-party API, a repository between domain and storage, a state machine for scattered status flags, a builder for a long parameter list, a template method for duplicated flows, an observer or event for cross-module notification. Report only when the gain is concrete: name the pattern, the place, what it removes, and a short sketch. Adding indirection with no current payoff is itself a bad pattern; say "no pattern needed" when that is the honest answer.
 5. **The owner's principles** from Step 0. Check each one that applies, and list the ones this PR breaks, by name.
+
+**Migrations in transition.** When the caller gives migrations in transition (source pattern → target pattern), a change that moves toward the target is correct: approve it with confidence. New code that uses the pattern being migrated away from is a **Warning**. A design-pattern suggestion is only for a place with more than one use; never for a single use.
 
 ### Step 3 — Produce Findings
 
@@ -91,6 +95,8 @@ End with a **Verdict**, the summary table, a **Principles broken** line (or "non
 - your recommended answer: "keep the architecture" or "accept the deviation, and record it in the architecture doc".
 
 ### Step 4 — Present Findings and Post
+
+**Inside `implement-flow`, skip Steps 4 and 5:** nothing is posted and nobody is notified; return the draft findings to the coordinator.
 
 Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation.** The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction. The one exception is **Decisions**.
 
@@ -144,3 +150,10 @@ When asked, produce a concise markdown summary (<40 lines) following Conventiona
 - **Test Plan:** 3-5 checkbox items
 - **Linked Issue:** `Closes #<num>` so GitHub auto-closes on merge
 - **Risk:** One sentence
+
+## In implement-flow
+
+- **Draft only.** Inside the flow nothing is posted. Return the findings to the coordinator; posting happens at the end, if at all.
+- **Scrutinized review.** The scrutinizer will challenge your review (missed findings, wrong findings, rubber-stamping). Answer each objection: add the missed finding, drop the wrong one, or say why it stands.
+- **Debate with the developer.** For each disputed finding, WITHDRAW it when the evidence holds, or HOLD it with a counter-argument. After three rounds on one finding, it goes to the user with both positions.
+- **Re-check.** After the fixes, review only the changed lines.
