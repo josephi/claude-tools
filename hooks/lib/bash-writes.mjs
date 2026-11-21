@@ -253,9 +253,9 @@ function removesSources(cmd, operands) {
 }
 
 function sourceOperands(operands, cmd, destinationIsAFlag) {
-  const files = fileOperands(operands, cmd).filter(isPathish);
+  const files = fileOperands(operands, cmd);
   const sources = destinationIsAFlag ? files : files.slice(0, -1);
-  return sources.filter((w) => !w.unresolvable).map((w) => w.value);
+  return sources.filter(isPathish).map((w) => w.value);
 }
 
 /**

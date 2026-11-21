@@ -504,9 +504,22 @@ try {
     assert.equal(denied(bash(`cp ${join(work, 'app.js')} ${join(work, 'backups')}/`)), false, 'cp only reads its source');
   });
 
+  step('mv to an unresolvable or remote destination still counts the source as a write', () => {
+    assert.ok(denied(bash(`mv ${join(work, 'app.js')} "$DEST"`)));
+    assert.ok(denied(bash(`rsync -a --remove-source-files ${join(work, 'app.js')} host:/x`)));
+  });
+
+  step('a dangling symlink in an ignored folder is denied: writing through it creates a new file', () => {
+    symlinkSync('../newfile.js', join(work, 'backups', 'dangling'));
+    assert.ok(denied(write('Edit', join(work, 'backups', 'dangling'))));
+    assert.ok(denied(bash(`echo x > ${join(work, 'backups', 'dangling')}`)));
+  });
+
   step('.git/info/exclude is not writable on a base branch: it decides what is ignored', () => {
     assert.ok(denied(write('Edit', join(work, '.git', 'info', 'exclude'))));
     assert.ok(denied(bash(`echo 'src/*' >> ${join(work, '.git', 'info', 'exclude')}`)));
+    assert.ok(denied(write('Edit', `${work}/.git/info/./exclude`)));
+    assert.ok(denied(bash(`echo x >> ${work}/.git//info/exclude`)));
     assert.equal(denied(write('Edit', join(work, '.git', 'config'))), false);
   });
 

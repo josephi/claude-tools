@@ -31,8 +31,8 @@
 // guard must not make the repo unwritable.
 
 import { pathToFileURL } from 'node:url';
-import { dirname, resolve, isAbsolute } from 'node:path';
-import { existsSync, realpathSync, statSync } from 'node:fs';
+import { dirname, resolve, isAbsolute, normalize } from 'node:path';
+import { existsSync, lstatSync, realpathSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { argv, env, stdin, stdout, exit, cwd as processCwd } from 'node:process';
 import { taskContext, branchContext, isBaseBranch, mainCheckout } from './lib/task-context.mjs';
@@ -68,8 +68,9 @@ export function targetPath(input = {}) {
 }
 
 export function isAlwaysAllowed(path) {
-  if (NEVER_ALLOWED.some((re) => re.test(path))) return false;
-  return ALWAYS_ALLOWED.some((re) => re.test(path));
+  const clean = normalize(path);
+  if (NEVER_ALLOWED.some((re) => re.test(clean))) return false;
+  return ALWAYS_ALLOWED.some((re) => re.test(clean));
 }
 
 // A git-ignored file (.env.local, backups/, scratch) never reaches the base
@@ -85,15 +86,20 @@ function checkIgnored(path) {
   }
 }
 
-function realTarget(path) {
-  try { return realpathSync(path); } catch { return path; }
+function isSymlink(path) {
+  try { return lstatSync(path).isSymbolicLink(); } catch { return false; }
 }
 
 // Both the path and what it points to must be ignored: a symlink in an ignored
-// folder can lead to a tracked file.
+// folder can lead to a tracked file, and a dangling one to a new file anywhere.
 export function isGitIgnored(path) {
-  const real = realTarget(path);
-  return checkIgnored(path) && (real === path || checkIgnored(real));
+  if (!checkIgnored(path)) return false;
+  if (!isSymlink(path)) return true;
+  try {
+    return checkIgnored(realpathSync(path));
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -291,8 +297,8 @@ async function main() {
       // Judge the branch of the repo the write LANDS IN, not the session's cwd.
       // In a multi-repo or worktree session those differ, and judging cwd denied
       // legitimate edits — pushing users to BENCH_ALLOW_BASE_EDITS=1, which
-      // disables the guard everywhere. Falls back to cwd for a brand-new path
-      // whose parent does not exist yet.
+      // disables the guard everywhere. A brand-new path is judged by its nearest
+      // existing ancestor.
       const target = targetPath(payload.tool_input ?? payload.toolInput);
       const targetDir = target ? judgeDirFor(isAbsolute(target) ? target : resolve(dir, target)) : '';
       const guardDir = targetDir || dir;
