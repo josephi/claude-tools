@@ -11,6 +11,14 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
 
+## [2.4.1] - 2026-11-21
+
+> Git-ignored files (.env.local, backups/, scratch) can be edited on a base branch; the guard no longer sends you to the shell for machine config.
+
+### Fixed
+
+- **Guard carve-out for ignored files.** A write to a path the repo's `.gitignore` excludes (checked with `git check-ignore`) is allowed on `main`, by Edit/Write and by Bash. Tracked files are still denied, including a force-added ignored file, a symlink in an ignored folder that points at a tracked file, and a tracked file moved into an ignored folder (`mv` and `rsync --remove-source-files` now count their sources as writes). `.git/info/exclude` is no longer writable on a base branch, since it decides what counts as ignored.
+
 ## [2.4.0] - 2026-11-21
 
 > New `implement-flow`: the session coordinates design ⇄ scrutiny, tests that fail first, implementation, a scrutinized review debated with the developer, and learned principles, instead of coding everything itself.

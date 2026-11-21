@@ -245,6 +245,19 @@ function destinationOperand(operands, cmd = '') {
   return isPathish(last) ? last.value : '';
 }
 
+// `mv` and `rsync --remove-source-files` delete their sources, so a source is a
+// write too: `mv src/app.js backups/` changes the repo as much as an edit does.
+function removesSources(cmd, operands) {
+  if (cmd === 'mv') return true;
+  return cmd === 'rsync' && operands.some((w) => w.value === '--remove-source-files');
+}
+
+function sourceOperands(operands, cmd, destinationIsAFlag) {
+  const files = fileOperands(operands, cmd);
+  const sources = destinationIsAFlag ? files : files.slice(0, -1);
+  return sources.filter(isPathish).map((w) => w.value);
+}
+
 /**
  * The directory a `cd`/`pushd`/`popd` segment moves to.
  * `dir: null` means it cannot be pinned down from the command text alone.
@@ -372,6 +385,9 @@ export function bashWriteTargets(command, depth = 0) {
       // `-t DIR` / `--target-directory=DIR` moves the destination off the end, so
       // the positional guess would name a source file instead.
       const explicit = targetDirectoryFlag(operands);
+      if (removesSources(cmd, operands)) {
+        for (const source of sourceOperands(operands, cmd, Boolean(explicit))) record(source);
+      }
       if (explicit) {
         if (explicit.dir) record(explicit.dir);
         return;
