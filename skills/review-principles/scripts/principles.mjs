@@ -1,24 +1,29 @@
 #!/usr/bin/env node
-// The owner's review principles, kept once at user level and enriched
-// incrementally: each review fetches only the owner's PR comments added since the
-// last harvest of that repo, instead of re-reading every old PR.
-//
-//   principles.mjs path                      print the principles file
-//   principles.mjs new --repo <owner/repo>   owner's new comments since the cursor (JSON)
-//
-// The cursors live in the principles file itself ("## Harvest cursors"), so the
-// skill records new principles and the cursor in one edit, and this script never
-// writes: a sandboxed shell cannot write the Claude config dir anyway.
+// Lists the owner's PR comments made since a repo's harvest cursor.
+// Usage: principles.mjs path | new --repo <owner/repo> [--login <me>]
 
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { argv, env, exit, stdout, stderr } from 'node:process';
 
-const AGENT_REVIEW_MAX_CHARS = 600;
 const EPOCH = '1970-01-01T00:00:00Z';
+const CODE_SPANS_TYPICAL_OF_AGENTS = 2;
+const LONG_FOR_THE_OWNER = 600;
+
+// Only unmistakable generated output is dropped; everything else under the
+// owner's login comes back with signals, and the skill decides.
+const GENERATED = [
+  /🤖|Generated with \[?Claude/,
+  /^#{1,6} /m,
+  /^\|.*\|\s*$/m,
+  /^\*\*[^*]{2,40}[.:]?\*\*/,
+  /^(Fixed|Addressed|Done|Changed|Replaced|Removed|Renamed) in [0-9a-f]{7,40}\b/i,
+];
+const AGENT_OPENERS = /^[*_\s]*(change requested|observation|nit|suggestion|for discussion|warning|critical|positive|blocker|should[- ]fix|must fix|minor|major|stale|agreed|applied|kept|verified|confirmed|merged|label added|left as is|superseded|review addressed)\b/i;
+const COMMIT_SHA = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b/;
 
 export function principlesDir(e = env) {
   return join(e.CLAUDE_CONFIG_DIR?.trim() || join(homedir(), '.claude'), 'review-principles');
@@ -33,35 +38,22 @@ export function parseCursors(markdown) {
   return cursors;
 }
 
-function cursorFor(repo) {
-  try { return parseCursors(readFileSync(principlesFile(), 'utf8'))[repo] ?? EPOCH; } catch { return EPOCH; }
+export function parseOwnerLogin(markdown) {
+  return (markdown ?? '').match(/^Owner login: (\S+)\s*$/m)?.[1] ?? null;
 }
 
-// Agents post under the owner's login too: findings with a severity label,
-// replies that say what was done and cite a commit, generated summaries. The
-// owner's own voice is a short question or instruction. This only narrows the
-// candidates; the review-principles skill makes the final call.
-const AGENT_OPENERS = [
-  'change requested', 'observation', 'nit', 'suggestion', 'for discussion', 'warning', 'critical',
-  'positive', 'question', 'blocking', 'non-blocking', 'blocker', 'should fix', 'should-fix', 'must fix',
-  'minor', 'major', 'stale', 'same as', 'same fix', 'agreed', 'applied', 'kept', 'split', 'replaced',
-  'follow-up', 'not a bug', 'not deliberate', 'verified', 'confirmed', 'done', 'merged', 'label added',
-  'changed', 'fixed', 'removed', 'renamed', 'right', 'noted', 'dropped', 'superseded', 'left as is',
-  'added', 'restored', 'review addressed', 'addressed',
-];
-const COMMIT_SHA = /\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b/;
-const GENERATED = /🤖|Generated with|^#{1,6} |^\|.*\|$|^\*\*/m;
-
-function opensLikeAnAgent(text) {
-  const opening = text.replace(/^[*_`\s]+/, '').toLowerCase();
-  return AGENT_OPENERS.some((word) => opening.startsWith(word) && !/[a-z]/.test(opening[word.length] ?? ''));
+export function isGenerated(body) {
+  return GENERATED.some((pattern) => pattern.test((body ?? '').trim()));
 }
 
-export function isOwnerVoice(body) {
+export function agentSignals(body) {
   const text = (body ?? '').trim();
-  if (!text || text.length > AGENT_REVIEW_MAX_CHARS) return false;
-  const quotesCodeLikeAnAgent = (text.match(/`/g) ?? []).length >= 4;
-  return !GENERATED.test(text) && !COMMIT_SHA.test(text) && !opensLikeAnAgent(text) && !quotesCodeLikeAnAgent;
+  const signals = [];
+  if (AGENT_OPENERS.test(text)) signals.push('opens like a review finding or reply');
+  if (COMMIT_SHA.test(text)) signals.push('cites a commit');
+  if ((text.match(/`[^`]+`/g) ?? []).length >= CODE_SPANS_TYPICAL_OF_AGENTS) signals.push('quotes code');
+  if (text.length > LONG_FOR_THE_OWNER) signals.push('long');
+  return signals;
 }
 
 export function prNumberOf(comment) {
@@ -70,37 +62,50 @@ export function prNumberOf(comment) {
   return match ? Number(match[1]) : null;
 }
 
-export function selectNew(comments, login, since) {
+const at = (iso) => Date.parse(iso);
+
+// The window is (since, until], and until is the newest comment the server
+// returned, so the next run starts exactly where this one stopped.
+export function harvestWindow(allComments, since) {
+  const until = allComments.map((c) => c.created_at)
+    .filter((t) => at(t) > at(since))
+    .reduce((newest, t) => (at(t) > at(newest) ? t : newest), since);
+  return { since, until };
+}
+
+export function selectNew(comments, login, { since, until }) {
   return comments
-    .filter((c) => c.user?.login === login && c.created_at > since && isOwnerVoice(c.body))
-    .filter((c) => prNumberOf(c) !== null)
+    .filter((c) => c.user?.login === login && at(c.created_at) > at(since) && at(c.created_at) <= at(until))
+    .filter((c) => prNumberOf(c) !== null && !isGenerated(c.body))
     .map((c) => ({
       pr: prNumberOf(c),
       url: c.html_url,
       path: c.path ?? null,
-      line: c.line ?? c.original_line ?? null,
       created_at: c.created_at,
+      agentSignals: agentSignals(c.body),
       body: c.body.trim(),
     }))
-    .sort((a, b) => a.created_at.localeCompare(b.created_at));
+    .sort((a, b) => at(a.created_at) - at(b.created_at));
 }
 
 function gh(args) {
   return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 256 * 1024 * 1024 });
 }
 
-function ghPages(path) {
-  const out = gh(['api', '--paginate', '--slurp', path]);
-  return JSON.parse(out).flat();
+const ghPages = (path) => JSON.parse(gh(['api', '--paginate', '--slurp', path])).flat();
+
+function readPrinciples() {
+  try { return readFileSync(principlesFile(), 'utf8'); } catch { return ''; }
 }
 
 function newComments(repo, login) {
-  const since = cursorFor(repo);
-  const until = new Date().toISOString();
+  const since = parseCursors(readPrinciples())[repo] ?? EPOCH;
   const query = `per_page=100&sort=created&direction=asc&since=${encodeURIComponent(since)}`;
   const inline = ghPages(`repos/${repo}/pulls/comments?${query}`);
   const conversation = ghPages(`repos/${repo}/issues/comments?${query}`).filter((c) => /\/pull\/\d+/.test(c.html_url ?? ''));
-  return { repo, login, since, until, comments: selectNew([...inline, ...conversation], login, since) };
+  const all = [...inline, ...conversation];
+  const window = harvestWindow(all, since);
+  return { repo, login, ...window, comments: selectNew(all, login, window) };
 }
 
 function flag(name) {
@@ -112,21 +117,21 @@ function main() {
   const command = argv[2];
   if (command === 'path') {
     stdout.write(`${principlesFile()}\n`);
-    stdout.write(existsSync(principlesFile()) ? '' : '(not created yet)\n');
     return;
   }
   const repo = flag('repo');
-  if (!repo) {
+  if (command !== 'new' || !repo) {
     stderr.write('usage: principles.mjs path | new --repo <owner/repo> [--login <me>]\n');
     exit(2);
   }
-  if (command === 'new') {
-    const login = flag('login') ?? gh(['api', 'user', '-q', '.login']).trim();
+  try {
+    const login = flag('login') ?? parseOwnerLogin(readPrinciples()) ?? gh(['api', 'user', '-q', '.login']).trim();
     stdout.write(`${JSON.stringify(newComments(repo, login), null, 2)}\n`);
-    return;
+  } catch (error) {
+    const reason = (error.stderr?.toString() || error.message).trim().split('\n')[0];
+    stderr.write(`principles: could not fetch comments for ${repo}: ${reason}\n`);
+    exit(1);
   }
-  stderr.write(`unknown command: ${command}\n`);
-  exit(2);
 }
 
 if (import.meta.url === pathToFileURL(argv[1] ?? '').href) main();

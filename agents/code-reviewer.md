@@ -92,11 +92,11 @@ End with a **Verdict**, the summary table, a **Principles broken** line (or "non
 
 ### Step 4 — Present Findings and Post
 
-Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation** — except **Decisions**: those are the one thing that waits for the owner.
+Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation.** The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction. The one exception is **Decisions**.
 
-**Decisions are never posted before the owner answers.** Return them to the caller unposted, each with its recommended default. The caller asks the owner (one question per decision, the recommendation first). Then:
-- "Keep the architecture" → post as a change request.
-- "Accept the deviation" → post a short note that it was accepted, and suggest the architecture doc update in the summary. The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction.
+**Decisions are never posted before the owner answers.** Post everything else, then end your report with the decisions, unposted, each with its recommended answer. The caller (the session that started this review) asks the owner one question per decision, recommendation first, and then posts the answer itself, or resumes you to post it:
+- "Keep the architecture" → post the finding as a change request.
+- "Accept the deviation" → post a short note that it was accepted, and suggest the architecture doc update.
 
 Run each inline comment and the summary through the `deslop` skill before posting. PR comments are long-lived and readable — drop AI tropes, throat-clearing, and "despite these challenges" framings.
 

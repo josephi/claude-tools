@@ -20,13 +20,17 @@ node "${CLAUDE_SKILL_DIR}/scripts/principles.mjs" path
 node "${CLAUDE_SKILL_DIR}/scripts/principles.mjs" new --repo <owner>/<repo>
 ```
 
-This prints JSON with `since` (that repo's cursor; the epoch the first time), `until`, and `comments`: the owner's inline and conversation PR comments created after the cursor. Agent output posted under the owner's login is mostly filtered out already: severity-labelled findings, "Done / Fixed in <sha>" replies, generated summaries.
+This prints JSON with `since` (that repo's cursor; the epoch the first time), `until` (the newest comment GitHub returned, so the next run starts exactly here), and `comments`: every inline and conversation PR comment under the owner's login in that window. Only unmistakable generated output is removed (headings, tables, the generated-by footer, a bold label opening, "Fixed in <sha>"). Each comment carries `agentSignals`, the reasons it might be an agent's (opens like a finding or reply, cites a commit, quotes code, long). Signals are hints, not verdicts.
 
-Nothing new: go to step 3 and skip the edit. Never re-read old PRs to "re-derive" principles; the file is the memory.
+The login is the `Owner login:` line at the top of the principles file; without it the script asks `gh` who is logged in, so add the line on the first run.
+
+If the command fails (it prints one `principles: could not fetch …` line and exits 1): review with the principles file as it is, leave the cursor, and say in the review summary that the harvest was skipped and why.
+
+Never re-read old PRs to "re-derive" principles; the file is the memory.
 
 ## Step 2: decide which comments are the owner's, and fold them in
 
-The script narrows; you make the final call. Keep a comment when it reads like the owner: a short question or instruction, often informal, sometimes with typos ("Use a consts for this and the other fixed parameters", "Do we have the sunrise and the sunset on each date?"). Drop what reads like an agent: a severity label, an explanation of what was changed, a confirmation, a commit hash, a quoted analysis.
+You make the call, comment by comment. Keep it when it reads like the owner: a short question or instruction, often informal, sometimes with typos ("Use a consts for this and the other fixed parameters", "Do we have the sunrise and the sunset on each date?", "Same as above", "Done?"). Drop what reads like an agent: a severity label, an account of what was changed, a confirmation, an analysis quoting code and commits. When unsure, keep it: a lost owner comment is never fetched again, a wrong principle can be corrected.
 
 For each comment you keep:
 
@@ -56,7 +60,7 @@ Never delete or weaken a principle on your own. When a new comment contradicts o
 Edit the principles file once, with the Edit or Write tool, not a shell redirect (a sandboxed shell cannot write the config dir):
 
 - the new or updated principles;
-- that repo's line under `## Harvest cursors`, set to the `until` value from step 1 (add the line if the repo is new).
+- that repo's line under `## Harvest cursors`, set to the `until` value from step 1 (add the line if the repo is new). Move it even when no comment was kept, so the same comments are not fetched again.
 
 ## Step 4: hand over
 
