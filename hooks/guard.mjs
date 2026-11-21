@@ -33,6 +33,7 @@
 import { pathToFileURL } from 'node:url';
 import { dirname, resolve, isAbsolute } from 'node:path';
 import { existsSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { argv, env, stdin, stdout, exit, cwd as processCwd } from 'node:process';
 import { taskContext, branchContext, isBaseBranch, mainCheckout } from './lib/task-context.mjs';
 import { bashWriteTargets } from './lib/bash-writes.mjs';
@@ -66,11 +67,24 @@ export function isAlwaysAllowed(path) {
   return ALWAYS_ALLOWED.some((re) => re.test(path));
 }
 
+// A git-ignored file (.env.local, backups/, scratch) never reaches the base
+// branch's history, so editing it is machine config, not an un-branched change.
+export function isGitIgnored(path) {
+  const dir = judgeDirFor(path);
+  if (!dir) return false;
+  try {
+    execFileSync('git', ['-C', dir, 'check-ignore', '-q', '--', path], { stdio: 'ignore', timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * @returns {{permissionDecision: 'deny', permissionDecisionReason: string}|null}
  *   null means "no opinion" — the guard defers to normal permission handling.
  */
-export function evaluateWrite(payload, ctx, { allowBaseEdits = false } = {}) {
+export function evaluateWrite(payload, ctx, { allowBaseEdits = false, isIgnored = () => false } = {}) {
   if (allowBaseEdits) return null;
 
   const toolName = payload.tool_name ?? payload.toolName ?? '';
@@ -78,7 +92,7 @@ export function evaluateWrite(payload, ctx, { allowBaseEdits = false } = {}) {
   if (!ctx?.branch || !isBaseBranch(ctx.branch)) return null;
 
   const path = targetPath(payload.tool_input ?? payload.toolInput);
-  if (path && isAlwaysAllowed(path)) return null;
+  if (path && (isAlwaysAllowed(path) || isIgnored(path))) return null;
 
   return {
     permissionDecision: 'deny',
@@ -123,7 +137,7 @@ export function judgeDirFor(path) {
  * @param {(dir: string) => {branch?: string}|null} resolveCtx injected for tests
  * @returns {{permissionDecision: 'deny', permissionDecisionReason: string}|null}
  */
-export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false, cwd = '' } = {}) {
+export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false, cwd = '', isIgnored = () => false } = {}) {
   if (allowBaseEdits) return null;
 
   const toolName = payload.tool_name ?? payload.toolName ?? '';
@@ -144,7 +158,7 @@ export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false,
 
     const relativeBase = dir ? resolve(base, dir) : base;
     const absolute = isAbsolute(target) ? target : resolve(relativeBase, target);
-    if (isAlwaysAllowed(absolute)) continue;
+    if (isAlwaysAllowed(absolute) || isIgnored(absolute)) continue;
 
     const judgeDir = judgeDirFor(absolute);
     if (!judgeDir) continue;
@@ -249,6 +263,7 @@ async function main() {
       }) ?? evaluateBashWrite(payload, branchContext, {
         allowBaseEdits: env.BENCH_ALLOW_BASE_EDITS === '1',
         cwd: dir,
+        isIgnored: isGitIgnored,
       });
       if (verdict) {
         out = { hookSpecificOutput: { hookEventName: 'PreToolUse', ...verdict } };
@@ -267,6 +282,7 @@ async function main() {
       // Write, so it takes the two-subprocess context rather than the full one.
       const verdict = evaluateWrite(payload, branchContext(guardDir), {
         allowBaseEdits: env.BENCH_ALLOW_BASE_EDITS === '1',
+        isIgnored: isGitIgnored,
       });
       if (verdict) {
         out = { hookSpecificOutput: { hookEventName: 'PreToolUse', ...verdict } };

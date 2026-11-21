@@ -463,6 +463,21 @@ try {
     assert.equal(res, null);
   });
 
+  step('a git-ignored file stays writable on a base branch, by Edit and by Bash', () => {
+    G(['checkout', 'master'], work);
+    writeFileSync(join(work, '.gitignore'), '.env.local\nbackups/\n');
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...write('Edit', join(work, '.env.local')) }, work), null);
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(`sed -i s/a/b/ ${join(work, '.env.local')}`) }, work), null);
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(`cat > ${join(work, 'backups', 'x.tgz')}`) }, work), null);
+  });
+
+  step('a tracked or unignored file next to it is still denied', () => {
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...write('Edit', join(work, '.env.example')) }, work)
+      ?.hookSpecificOutput?.permissionDecision, 'deny');
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(`echo x > ${join(work, 'a.txt')}`) }, work)
+      ?.hookSpecificOutput?.permissionDecision, 'deny');
+  });
+
   step('escape hatch unblocks master', () => {
     G(['checkout', 'master'], work);
     const res = run({ hook_event_name: 'PreToolUse', ...write('Edit', join(work, 'a.txt')) }, work,
