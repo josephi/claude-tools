@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
-import { composeDownArgs, keepMarkerPath, parseStacks, parseWorktrees, planCleanup } from './cleanup-core.mjs';
+import { composeDownArgs, keepMarkerPath, parseStacks, parseWorktrees, planCleanup, worktreesUsed } from './cleanup-core.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const HOOK = join(HERE, 'session-end-cleanup.mjs');
@@ -66,6 +66,24 @@ step('parses worktree porcelain with branch, lock and prunable', () => {
   ]);
 });
 
+step('a project name started from two folders is ambiguous and never taken down', () => {
+  const stacks = parseStacks(`p1\t${WT('a')}\t\np1\t${WT('b')}\t`);
+  assert.equal(stacks[0].ambiguous, true);
+  const p = plan({ stacks, usedBySession: new Set([WT('a')]) });
+  assert.equal(p.downStacks.length, 0);
+});
+
+step('used = ran in it, or a docker command named it; never a mention in output', () => {
+  const worktrees = [wt('feat-4'), wt('feat-42'), wt('b'), wt('c')];
+  const transcript = [
+    { cwd: WT('feat-42') },
+    { type: 'user', message: { content: [{ type: 'tool_result', content: `${WT('b')} abc [feat/b]\n${WT('c')} def [feat/c]` }] } },
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: `docker compose -f ${WT('c')}/docker-compose.yml up -d` } }] } },
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: `git worktree list | grep ${WT('b')}` } }] } },
+  ].map((e) => JSON.stringify(e)).join('\n');
+  assert.deepEqual([...worktreesUsed(transcript, worktrees)].sort(), [WT('c'), WT('feat-42')].sort());
+});
+
 step('one stack per compose project, config files split', () => {
   const stacks = parseStacks(`p1\t${WT('a')}\t${WT('a')}/c.yml,/tmp/net.yml\np1\t${WT('a')}\t\np2\t${MAIN}\t`);
   assert.equal(stacks.length, 2);
@@ -77,7 +95,7 @@ console.log('\ncleanup — policy');
 step('merged and clean: worktree removed, its stacks taken down', () => {
   const p = plan({ isMerged: (w) => w.path === WT('a'), stacks: [stack('pa', WT('a'))], usedBySession: new Set([WT('a')]) });
   assert.deepEqual(p.removeWorktrees.map((w) => w.path), [WT('a')]);
-  assert.deepEqual(p.downStacks.map((s) => s.project), ['pa']);
+  assert.deepEqual(p.downStacks.map((d) => d.stack.project), ['pa']);
 });
 
 step('merged but dirty: nothing removed', () => {
@@ -85,10 +103,21 @@ step('merged but dirty: nothing removed', () => {
   assert.equal(p.removeWorktrees.length, 0);
 });
 
-step('open task this session used: stack down, worktree stays', () => {
+step('open task this session used: stack down with its data kept, worktree stays', () => {
   const p = plan({ stacks: [stack('pa', WT('a'))], usedBySession: new Set([WT('a')]) });
   assert.equal(p.removeWorktrees.length, 0);
-  assert.deepEqual(p.downStacks.map((s) => s.project), ['pa']);
+  assert.deepEqual(p.downStacks.map((d) => [d.stack.project, d.keepData]), [['pa', true]]);
+});
+
+step('merged worktree with recent git activity from another session is skipped', () => {
+  const p = plan({ isMerged: () => true, isRecentlyActive: (w) => w.path === WT('a') });
+  assert.ok(!p.removeWorktrees.some((w) => w.path === WT('a')));
+  assert.ok(p.removeWorktrees.some((w) => w.path === WT('b')));
+});
+
+step('recent activity does not block a worktree this session used', () => {
+  const p = plan({ isMerged: () => true, isRecentlyActive: () => true, usedBySession: new Set([WT('a')]) });
+  assert.deepEqual(p.removeWorktrees.map((w) => w.path), [WT('a')]);
 });
 
 step("another session's stack is never touched", () => {
@@ -116,7 +145,7 @@ step('locked worktrees are left alone', () => {
 
 step('stack of a worktree that no longer exists is an orphan and comes down', () => {
   const p = plan({ stacks: [stack('gone', WT('gone'))], exists: (path) => !path.includes('gone') });
-  assert.deepEqual(p.downStacks.map((s) => s.project), ['gone']);
+  assert.deepEqual(p.downStacks.map((d) => d.stack.project), ['gone']);
 });
 
 step('main checkout stacks are never touched', () => {
@@ -131,6 +160,8 @@ step('compose down uses the config files when they all exist, removes volumes an
       'down', '--volumes', '--rmi', 'local', '--remove-orphans']);
   assert.deepEqual(composeDownArgs(s, () => false),
     ['compose', '-p', 'pa', 'down', '--volumes', '--rmi', 'local', '--remove-orphans']);
+  assert.deepEqual(composeDownArgs(s, () => false, { keepData: true }),
+    ['compose', '-p', 'pa', 'down', '--rmi', 'local', '--remove-orphans']);
 });
 
 console.log('\ncleanup — end-to-end against a real repo');
@@ -179,7 +210,10 @@ writeFileSync(join(bin, 'docker'), `#!/bin/sh\necho "$*" >> "${calls}"\n[ "$1" =
 chmodSync(join(bin, 'docker'), 0o755);
 
 const transcript = join(root, 'transcript.jsonl');
-writeFileSync(transcript, JSON.stringify({ cwd: open, text: `worked in ${open} and ${squashed}` }));
+writeFileSync(transcript, [
+  { cwd: open },
+  { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Bash', input: { command: `docker compose -f ${squashed}/compose.yml up -d` } }] } },
+].map((e) => JSON.stringify(e)).join('\n'));
 
 function hook(extraArgs = []) {
   return execFileSync('node', [HOOK, ...extraArgs], {
@@ -193,7 +227,7 @@ function hook(extraArgs = []) {
 step('dry run plans without changing anything', () => {
   const p = JSON.parse(hook(['--dry-run']));
   assert.deepEqual(p.removeWorktrees.map((w) => w.branch), ['feat/squashed']);
-  assert.deepEqual(p.downStacks.map((s) => s.project), ['s-open']);
+  assert.deepEqual(p.downStacks.map((d) => d.stack.project), ['s-open']);
   assert.ok(existsSync(squashed));
 });
 
@@ -204,7 +238,8 @@ step('applies: squash-merged worktree and branch gone, open one kept, only owned
   assert.ok(existsSync(open), 'open task keeps its files');
   assert.ok(existsSync(kept), 'keep marker honoured');
   const log = readFileSync(calls, 'utf8');
-  assert.match(log, /compose -p s-open .*down --volumes --rmi local/);
+  assert.match(log, /compose -p s-open .*down --rmi local/);
+  assert.doesNotMatch(log, /-p s-open .*--volumes/);
   assert.doesNotMatch(log, /-p s-kept/);
   assert.doesNotMatch(log, /-p s-other/);
 });

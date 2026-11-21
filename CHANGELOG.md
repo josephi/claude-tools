@@ -17,7 +17,7 @@ Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in t
 
 ### Added
 
-- **Session-end cleanup** (`worktree-manager/scripts/session-end-cleanup.mjs`, replaces `prune-self-on-stop.mjs`). Removes every merged, clean worktree of the repo with its branch, and takes down its Compose stacks (containers, volumes, images they built). Stacks of worktrees this session worked in come down even when the task is still open; the worktree stays. Ownership comes from the compose working-dir label, so another session's stack is never touched. `<repo>/.claude/worktrees/<name>.keep-docker` keeps a worktree and its stack. Squash merges are detected. `--dry-run` shows the plan.
+- **Session-end cleanup** (`worktree-manager/scripts/session-end-cleanup.mjs`, replaces `prune-self-on-stop.mjs`). Removes every merged, clean worktree of the repo with its branch, and takes down its Compose stacks (containers, volumes, images they built). Stacks of worktrees this session worked in (ran in, or named in a `docker` command) come down even when the task is still open; the worktree and its data volumes stay. Merged worktrees with recent git activity from another session are left alone. Runs inside a 55 s budget with non-interactive git. Ownership comes from the compose working-dir label, so another session's stack is never touched. `<repo>/.claude/worktrees/<name>.keep-docker` keeps a worktree and its stack. Squash merges are detected. `--dry-run` shows the plan.
 - **task-completion: cleanup after merge.** Stacks, worktree and branch go right after the merge, not only at session end.
 
 ### Changed

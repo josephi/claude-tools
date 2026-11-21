@@ -38,23 +38,62 @@ export function parseWorktrees(porcelain) {
 }
 
 // Input: `docker ps -a` lines of "<project>\t<working_dir>\t<config_files>".
+// A project name started from two different folders is ambiguous: `-p name down`
+// would reach both, so it is never taken down.
 export function parseStacks(psOutput) {
   const byProject = new Map();
   for (const line of (psOutput ?? '').split('\n')) {
     const [project, workingDir, configFiles = ''] = line.split('\t');
-    if (!project || !workingDir || byProject.has(project)) continue;
+    if (!project || !workingDir) continue;
+    const known = byProject.get(project);
+    if (known) {
+      if (known.workingDir !== workingDir) known.ambiguous = true;
+      continue;
+    }
     byProject.set(project, {
       project,
       workingDir,
       configFiles: configFiles.split(',').map((f) => f.trim()).filter(Boolean),
+      ambiguous: false,
     });
   }
   return [...byProject.values()];
 }
 
-export function worktreesMentioned(transcript, worktrees) {
-  if (!transcript) return new Set();
-  return new Set(worktrees.filter((wt) => transcript.includes(wt.path)).map((wt) => wt.path));
+const PATH_END = /^($|[\s/'"`;&|)])/;
+
+function namesPath(text, path) {
+  for (let at = text.indexOf(path); at !== -1; at = text.indexOf(path, at + 1)) {
+    if (PATH_END.test(text.slice(at + path.length, at + path.length + 1))) return true;
+  }
+  return false;
+}
+
+function transcriptEntries(transcript) {
+  return (transcript ?? '').split('\n').flatMap((line) => {
+    try { return [JSON.parse(line)]; } catch { return []; }
+  });
+}
+
+function dockerCommands(entry) {
+  const content = entry?.message?.content;
+  if (!Array.isArray(content)) return [];
+  return content
+    .filter((part) => part?.type === 'tool_use' && typeof part.input?.command === 'string')
+    .map((part) => part.input.command)
+    .filter((command) => /\bdocker\b/.test(command));
+}
+
+// A worktree counts as used by the session when the session ran in it, or ran a
+// docker command naming it. Mentions in tool output (a `git worktree list`, say)
+// do not count: those name every worktree.
+export function worktreesUsed(transcript, worktrees) {
+  const entries = transcriptEntries(transcript);
+  const cwds = entries.map((e) => e?.cwd).filter((c) => typeof c === 'string');
+  const commands = entries.flatMap(dockerCommands);
+  return new Set(worktrees
+    .filter((wt) => cwds.some((c) => isInside(c, wt.path)) || commands.some((c) => namesPath(c, wt.path)))
+    .map((wt) => wt.path));
 }
 
 /**
@@ -66,13 +105,19 @@ export function worktreesMentioned(transcript, worktrees) {
  * @param {(wt) => boolean} input.isMerged
  * @param {(wt) => boolean} input.isDirty
  * @param {(wt) => boolean} input.isKept
+ * @param {(wt) => boolean} input.isRecentlyActive  git activity a live session would cause
  * @param {(path) => boolean} input.exists
+ *
+ * downStacks entries are { stack, keepData }: a removed worktree's stack loses its
+ * volumes; an open task's stack keeps them, so its database survives the stop.
  */
-export function planCleanup({ main, worktrees, stacks, usedBySession, isMerged, isDirty, isKept, exists }) {
+export function planCleanup({ main, worktrees, stacks, usedBySession, isMerged, isDirty, isKept, isRecentlyActive = () => false, exists }) {
   const plan = { removeWorktrees: [], downStacks: [], kept: [], skipped: [] };
   const root = worktreesRoot(main);
   const linked = worktrees.filter((wt) => wt.path !== main && isInside(wt.path, root));
-  const stacksIn = (wt) => stacks.filter((s) => isInside(s.workingDir, wt.path));
+  const ownable = stacks.filter((s) => !s.ambiguous);
+  const stacksIn = (wt) => ownable.filter((s) => isInside(s.workingDir, wt.path));
+  const down = (list, keepData) => plan.downStacks.push(...list.map((stack) => ({ stack, keepData })));
 
   for (const wt of linked) {
     const own = stacksIn(wt);
@@ -81,33 +126,33 @@ export function planCleanup({ main, worktrees, stacks, usedBySession, isMerged, 
     if (isKept(wt)) { plan.kept.push({ path: wt.path, reason: 'keep marker' }); continue; }
     if (wt.locked) { plan.skipped.push({ path: wt.path, reason: 'locked' }); continue; }
 
-    const finished = wt.branch && isMerged(wt) && !isDirty(wt);
-    if (finished && (own.length === 0 || usedHere)) {
+    const finished = Boolean(wt.branch) && isMerged(wt) && !isDirty(wt);
+    const maybeInUseElsewhere = !usedHere && (own.length > 0 || isRecentlyActive(wt));
+    if (finished && !maybeInUseElsewhere) {
       plan.removeWorktrees.push(wt);
-      plan.downStacks.push(...own);
+      down(own, false);
     } else if (finished) {
-      plan.skipped.push({ path: wt.path, reason: 'merged, but its stack runs and another session may use it' });
+      plan.skipped.push({ path: wt.path, reason: 'merged, but another session may still be using it' });
     } else if (usedHere && own.length) {
-      plan.downStacks.push(...own);
+      down(own, true);
     }
   }
 
-  const known = new Set(linked.map((wt) => wt.path));
-  for (const stack of stacks) {
-    const orphan = isInside(stack.workingDir, root)
-      && ![...known].some((p) => isInside(stack.workingDir, p))
-      && !exists(stack.workingDir);
-    if (orphan) plan.downStacks.push(stack);
-  }
+  const known = linked.map((wt) => wt.path);
+  const orphans = ownable.filter((stack) => isInside(stack.workingDir, root)
+    && !known.some((p) => isInside(stack.workingDir, p))
+    && !exists(stack.workingDir));
+  down(orphans, false);
 
   return plan;
 }
 
-export function composeDownArgs(stack, exists) {
+export function composeDownArgs(stack, exists, { keepData = false } = {}) {
   const base = ['compose', '-p', stack.project];
   const filesPresent = stack.configFiles.length > 0 && stack.configFiles.every(exists);
   const files = filesPresent
     ? ['--project-directory', stack.workingDir, ...stack.configFiles.flatMap((f) => ['-f', f])]
     : [];
-  return [...base, ...files, 'down', '--volumes', '--rmi', 'local', '--remove-orphans'];
+  const volumes = keepData ? [] : ['--volumes'];
+  return [...base, ...files, 'down', ...volumes, '--rmi', 'local', '--remove-orphans'];
 }

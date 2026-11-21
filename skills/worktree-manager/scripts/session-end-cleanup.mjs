@@ -16,20 +16,35 @@
 // Env:   CLAUDE_PRUNE_BASE base branch(es), comma-separated; default origin/HEAD.
 
 import { execFileSync } from 'node:child_process';
-import { appendFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { appendFileSync, existsSync, readFileSync, rmSync, statSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import { argv, env, exit, stdin } from 'node:process';
 import {
-  composeDownArgs, keepMarkerPath, parseStacks, parseWorktrees, planCleanup,
-  worktreesMentioned, worktreesRoot,
+  composeDownArgs, isInside, keepMarkerPath, parseStacks, parseWorktrees, planCleanup,
+  worktreesRoot, worktreesUsed,
 } from './cleanup-core.mjs';
 
 const DRY_RUN = argv.includes('--dry-run');
 const REGEN_PREFIXES = ['.husky/_', 'node_modules'];
+const BUDGET_MS = 55000;
+const RECENT_ACTIVITY_MS = 30 * 60 * 1000;
+const deadline = Date.now() + BUDGET_MS;
+const NON_INTERACTIVE_GIT = {
+  ...env,
+  GIT_TERMINAL_PROMPT: '0',
+  GIT_SSH_COMMAND: 'ssh -o BatchMode=yes',
+  GIT_AUTHOR_NAME: 'bench', GIT_AUTHOR_EMAIL: 'bench@localhost',
+  GIT_COMMITTER_NAME: 'bench', GIT_COMMITTER_EMAIL: 'bench@localhost',
+};
 
-function run(cmd, args, opts = {}) {
+const timeLeft = () => deadline - Date.now();
+
+function run(cmd, args, { timeout = 20000, trim = true, ...opts } = {}) {
+  const allowed = Math.min(timeout, timeLeft() - 1000);
+  if (allowed <= 0) return null;
   try {
-    return execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: 45000, ...opts }).trim();
+    const out = execFileSync(cmd, args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], timeout: allowed, env: NON_INTERACTIVE_GIT, ...opts });
+    return trim ? out.trim() : out;
   } catch {
     return null;
   }
@@ -66,11 +81,19 @@ function mergedInto(main, branch, base) {
 }
 
 function isDirty(wt) {
-  const status = git(wt.path, 'status', '--porcelain');
+  const status = run('git', ['-C', wt.path, 'status', '--porcelain', '-z'], { trim: false });
   if (status === null) return true;
-  return status.split('\n').filter(Boolean).some((line) => {
-    const path = line.slice(3);
+  return status.split('\0').filter(Boolean).some((entry) => {
+    const path = entry.slice(3);
     return !REGEN_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`));
+  });
+}
+
+function isRecentlyActive(main, wt) {
+  const admin = git(wt.path, 'rev-parse', '--path-format=absolute', '--git-dir');
+  if (!admin) return true;
+  return ['HEAD', 'index'].some((file) => {
+    try { return Date.now() - statSync(join(admin, file)).mtimeMs < RECENT_ACTIVITY_MS; } catch { return false; }
   });
 }
 
@@ -97,9 +120,9 @@ async function main() {
   const worktrees = parseWorktrees(git(main, 'worktree', 'list', '--porcelain'));
   const stacks = listStacks();
   const bases = baseBranches(main);
-  for (const base of bases) git(main, 'fetch', '--quiet', 'origin', base);
+  for (const base of bases) run('git', ['-C', main, 'fetch', '--quiet', 'origin', base], { timeout: 10000 });
 
-  const usedBySession = worktreesMentioned(readTranscript(payload.transcript_path), worktrees);
+  const usedBySession = worktreesUsed(readTranscript(payload.transcript_path), worktrees);
   if (projectDir !== main) usedBySession.add(resolve(projectDir));
 
   const plan = planCleanup({
@@ -110,6 +133,7 @@ async function main() {
     isMerged: (wt) => bases.some((base) => mergedInto(main, wt.branch, base)),
     isDirty,
     isKept: (wt) => existsSync(keepMarkerPath(main, wt.path)),
+    isRecentlyActive: (wt) => isRecentlyActive(main, wt),
     exists: existsSync,
   });
 
@@ -126,14 +150,18 @@ async function main() {
 
   const log = [];
   const failedStackDirs = [];
-  for (const stack of plan.downStacks) {
-    const ok = run('docker', composeDownArgs(stack, existsSync), { timeout: 40000 }) !== null;
-    log.push(`${ok ? 'down' : 'FAILED down'} ${stack.project} (${stack.workingDir})`);
+  for (const { stack, keepData } of plan.downStacks) {
+    const ok = run('docker', composeDownArgs(stack, existsSync, { keepData }), { timeout: 40000 }) !== null;
+    log.push(`${ok ? 'down' : 'FAILED down'} ${stack.project}${keepData ? ' (data kept)' : ''} (${stack.workingDir})`);
     if (!ok) failedStackDirs.push(stack.workingDir);
   }
 
   for (const wt of plan.removeWorktrees) {
-    if (failedStackDirs.some((dir) => dir.startsWith(wt.path))) {
+    if (timeLeft() < 5000) {
+      log.push(`out of time, left ${wt.path} for the next session`);
+      continue;
+    }
+    if (failedStackDirs.some((dir) => isInside(dir, wt.path))) {
       log.push(`kept ${wt.path}: its stack did not come down`);
       continue;
     }

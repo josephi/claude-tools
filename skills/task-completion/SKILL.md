@@ -84,7 +84,7 @@ Stop conditions: PR merged, PR closed, or the user stops the loop manually.
 
 ## When the session stops before the task is done
 
-The `SessionEnd` hook (`worktree-manager/scripts/session-end-cleanup.mjs`) takes down the Compose stacks of every worktree this session worked in, and removes worktrees whose branch is merged and clean. The worktree of an open task stays; only its containers, volumes and built images go. A stack started from another worktree, or from the main checkout, is never touched.
+The `SessionEnd` hook (`worktree-manager/scripts/session-end-cleanup.mjs`) takes down the Compose stacks of every worktree this session worked in, and removes worktrees whose branch is merged and clean. The worktree of an open task stays, and so do its data volumes; its containers and built images go. A worktree counts as used when the session ran in it or ran a `docker` command naming it. A stack started from another worktree, or from the main checkout, is never touched, and a merged worktree with recent git activity from another session is left for later.
 
 When the user says to keep a stack ("leave it running", "I'm using it"), write the keep marker so the hook leaves that worktree and its stack alone:
 
