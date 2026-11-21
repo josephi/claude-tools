@@ -42,6 +42,12 @@ Use `gh` for all PR interactions. Extract repo + PR number from the URL:
 
 ## Review Workflow
 
+### Step 0 — Load the owner's principles
+
+Run the `review-principles` skill for this repo before anything else. It fetches only the owner's PR comments added since the last review of the repo, folds them into the user-level principles file, and returns the full list. Do not read old PRs to rediscover principles: the file is the memory, and it is shared by every repo.
+
+Every principle in that list is a check on this PR. A principle scoped to another language or project does not apply here.
+
 ### Step 1 — Gather Context
 
 1. `gh pr view <num> --json title,body,author,baseRefName,headRefName,files,labels,reviews`
@@ -55,7 +61,13 @@ Use `gh` for all PR interactions. Extract repo + PR number from the URL:
 
 ### Step 2 — Analyze
 
-Read changed files in full context. Understand what changed, why, and what could break.
+Read changed files in full context. Understand what changed, why, and what could break. Then go through five lenses, every review:
+
+1. **Architecture conformance.** Read the project's own architecture first: `CLAUDE.md`, `docs/architecture/**`, ADRs or `docs/adr/**`, and the layout of the modules the PR touches (where similar code already lives, which layer talks to which). Check the PR against it: layer boundaries, where state lives, how modules talk, the extension points the project defines (for example "a new analysis is a module class plus its controls"). A deviation is **not** a defect you decide alone. Record it as a **decision** (see Step 3): what the architecture says, what the PR does instead, the trade-off, and your recommendation.
+2. **Bad patterns.** Known anti-patterns in the diff: god objects and functions, shotgun surgery, feature envy, primitive obsession, boolean-flag parameters, temporal coupling, hidden global state, copy-paste instead of reuse, swallowed errors, leaky abstractions, N+1 calls, and so on. Name the anti-pattern and the concrete harm it causes here.
+3. **Conventions.** The project's written conventions (CLAUDE.md, contributing guides, lint config) and its unwritten ones: naming, file layout, error types, logging, test style, how similar code nearby is already written. A break is a finding even when the code works.
+4. **Design-pattern opportunities.** Look for places where a known pattern would remove real complexity: a strategy or registry for a growing `switch`, an adapter around a third-party API, a repository between domain and storage, a state machine for scattered status flags, a builder for a long parameter list, a template method for duplicated flows, an observer or event for cross-module notification. Report only when the gain is concrete: name the pattern, the place, what it removes, and a short sketch. Adding indirection with no current payoff is itself a bad pattern; say "no pattern needed" when that is the honest answer.
+5. **The owner's principles** from Step 0. Check each one that applies, and list the ones this PR breaks, by name.
 
 ### Step 3 — Produce Findings
 
@@ -66,14 +78,25 @@ Read changed files in full context. Understand what changed, why, and what could
 | **Suggestion** | Better approaches, readability, performance, DRY | Optional |
 | **Nit** | Style, naming, typos | Won't block |
 | **Positive** | Good decisions worth reinforcing | — |
+| **Decision** | Deviates from the project's architecture; the owner decides | Ask first |
 
 Each finding: **Location** (file + line) · **What's wrong** · **Why it matters** · **Suggestion** (code snippet when applicable).
 
-End with a **Verdict** and summary table.
+Tag each finding with its lens (`architecture`, `anti-pattern`, `convention`, `design-pattern`, `principle: <name>`, or `correctness`/`security`/`performance`).
+
+End with a **Verdict**, the summary table, a **Principles broken** line (or "none"), and a **Decisions for the owner** list. Each decision gives:
+- what the architecture says (with the file it comes from);
+- what the PR does instead;
+- the trade-off;
+- your recommended answer: "keep the architecture" or "accept the deviation, and record it in the architecture doc".
 
 ### Step 4 — Present Findings and Post
 
-Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation.** The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction.
+Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation.** The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction. The one exception is **Decisions**.
+
+**Decisions are never posted before the owner answers.** Post everything else, then end your report with the decisions, unposted, each with its recommended answer. The caller (the session that started this review) asks the owner one question per decision, recommendation first, and then posts the answer itself, or resumes you to post it:
+- "Keep the architecture" → post the finding as a change request.
+- "Accept the deviation" → post a short note that it was accepted, and suggest the architecture doc update.
 
 Run each inline comment and the summary through the `deslop` skill before posting. PR comments are long-lived and readable — drop AI tropes, throat-clearing, and "despite these challenges" framings.
 

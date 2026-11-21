@@ -11,6 +11,16 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
 
+## [2.3.0] - 2026-11-21
+
+> Reviews check architecture, anti-patterns, conventions and design-pattern opportunities, ask you before posting an architecture deviation, and apply your principles from one user-level file that grows incrementally.
+
+### Added
+
+- **`review-principles` skill.** The owner's review principles live in `<config>/review-principles/principles.md`, in categories, with a scope and sources for each, shared by every repo. `scripts/principles.mjs new --repo` returns only the owner's PR comments since that repo's cursor, which is kept in the same file. Only unmistakable generated output is dropped; every other comment under the owner's login comes back with `agentSignals`, and the skill decides, keeping it when unsure. The window is (cursor, newest comment returned], compared as times, so nothing is skipped or fetched twice whatever the local clock. The skill folds the comments into principles and moves the cursor in one edit, even when nothing was kept. A `gh` failure is one line and exit 1; the review goes on with the file as it is.
+- **code-reviewer step 0 and five lenses.** Step 0 loads the principles. Every review then checks architecture conformance (against CLAUDE.md, `docs/architecture`, ADRs and the module layout), anti-patterns, conventions, design-pattern opportunities (only with a concrete gain), and the owner's principles, and names the principles a PR breaks.
+- **Decisions.** An architecture deviation is returned unposted, with a recommendation; the caller asks the owner and posts according to the answer. This is the one exception to "no second gate".
+
 ## [2.2.0] - 2026-11-21
 
 > Bench cleans up after itself: merged worktrees and their Docker stacks go at session end, an open task's stacks stop, and everything works inside the claude-vm container.

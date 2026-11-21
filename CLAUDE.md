@@ -232,6 +232,8 @@ Do **not** pause for a second "want me to post?" confirmation. The author alread
 
 Exception: the user says up front "draft only", "show me first", or "don't post yet". In that case, stop at step 1 and wait.
 
+Second exception: **architecture decisions.** When the review finds the PR deviating from the project's architecture, the reviewer returns it as a decision, unposted. Ask the user one question per decision (recommended answer first: keep the architecture, or accept the deviation and record it in the architecture doc), then post according to the answer. Everything else is still posted without a gate.
+
 **Why:** After a review is generated, the next expected action is to post it. Rechecking intent every time is a wasted gate and trains the user to type "yes" without thinking.
 
 ## pr-labels
@@ -290,6 +292,8 @@ The agent:
 - Produces the standard severity-graded finding format
 - Posts inline and summary comments
 - Announces the review on Discord or GitHub Discussions when the PR is someone else's
+- Loads the owner's review principles first (`review-principles`: only comments new since the last review, folded into one user-level file), and checks architecture conformance, anti-patterns, conventions and design-pattern opportunities on every PR
+- Returns architecture deviations as decisions for the owner instead of posting them
 
 Ad-hoc chat reviews skip these steps and almost always miss findings the checklists catch.
 
