@@ -32,7 +32,7 @@
 
 import { pathToFileURL } from 'node:url';
 import { dirname, resolve, isAbsolute } from 'node:path';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, realpathSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { argv, env, stdin, stdout, exit, cwd as processCwd } from 'node:process';
 import { taskContext, branchContext, isBaseBranch, mainCheckout } from './lib/task-context.mjs';
@@ -52,6 +52,10 @@ const ALWAYS_ALLOWED = [
   /(^|[\\/])\.git[\\/]/,
 ];
 
+// .git/info/exclude decides what counts as ignored, so writing it would let any
+// tracked-looking path through the ignored-file carve-out.
+const NEVER_ALLOWED = [/(^|[\\/])\.git[\\/]info[\\/]exclude$/];
+
 export function isWriteTool(toolName) {
   return WRITE_TOOLS.has(toolName);
 }
@@ -64,12 +68,13 @@ export function targetPath(input = {}) {
 }
 
 export function isAlwaysAllowed(path) {
+  if (NEVER_ALLOWED.some((re) => re.test(path))) return false;
   return ALWAYS_ALLOWED.some((re) => re.test(path));
 }
 
 // A git-ignored file (.env.local, backups/, scratch) never reaches the base
 // branch's history, so editing it is machine config, not an un-branched change.
-export function isGitIgnored(path) {
+function checkIgnored(path) {
   const dir = judgeDirFor(path);
   if (!dir) return false;
   try {
@@ -78,6 +83,17 @@ export function isGitIgnored(path) {
   } catch {
     return false;
   }
+}
+
+function realTarget(path) {
+  try { return realpathSync(path); } catch { return path; }
+}
+
+// Both the path and what it points to must be ignored: a symlink in an ignored
+// folder can lead to a tracked file.
+export function isGitIgnored(path) {
+  const real = realTarget(path);
+  return checkIgnored(path) && (real === path || checkIgnored(real));
 }
 
 /**
@@ -113,6 +129,8 @@ export function evaluateWrite(payload, ctx, { allowBaseEdits = false, isIgnored 
  * the parent, so a write into a not-yet-created directory is still judged.
  */
 export function judgeDirFor(path) {
+  const insideGitDir = path.match(/^(.*?)[\\/]\.git([\\/]|$)/);
+  if (insideGitDir) return insideGitDir[1] || '';
   try {
     if (existsSync(path) && statSync(path).isDirectory()) return path;
   } catch { /* unreadable — fall through to the ancestor walk */ }
@@ -158,13 +176,14 @@ export function evaluateBashWrite(payload, resolveCtx, { allowBaseEdits = false,
 
     const relativeBase = dir ? resolve(base, dir) : base;
     const absolute = isAbsolute(target) ? target : resolve(relativeBase, target);
-    if (isAlwaysAllowed(absolute) || isIgnored(absolute)) continue;
+    if (isAlwaysAllowed(absolute)) continue;
 
     const judgeDir = judgeDirFor(absolute);
     if (!judgeDir) continue;
 
     const ctx = resolveCtx(judgeDir);
     if (!ctx?.branch || !isBaseBranch(ctx.branch)) continue;
+    if (isIgnored(absolute)) continue;
 
     return {
       permissionDecision: 'deny',
@@ -275,8 +294,8 @@ async function main() {
       // disables the guard everywhere. Falls back to cwd for a brand-new path
       // whose parent does not exist yet.
       const target = targetPath(payload.tool_input ?? payload.toolInput);
-      const targetDir = target ? dirname(target) : '';
-      const guardDir = targetDir && existsSync(targetDir) ? targetDir : dir;
+      const targetDir = target ? judgeDirFor(isAbsolute(target) ? target : resolve(dir, target)) : '';
+      const guardDir = targetDir || dir;
 
       // The write guard reads only branch/onBase but runs on every Edit and
       // Write, so it takes the two-subprocess context rather than the full one.

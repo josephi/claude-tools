@@ -17,7 +17,7 @@ Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in t
 
 ### Fixed
 
-- **Guard carve-out for ignored files.** A write to a path the repo's `.gitignore` excludes (checked with `git check-ignore`) is allowed on `main`, by Edit/Write and by Bash. Tracked files are still denied.
+- **Guard carve-out for ignored files.** A write to a path the repo's `.gitignore` excludes (checked with `git check-ignore`) is allowed on `main`, by Edit/Write and by Bash. Tracked files are still denied, including a force-added ignored file, a symlink in an ignored folder that points at a tracked file, and a tracked file moved into an ignored folder (`mv` and `rsync --remove-source-files` now count their sources as writes). `.git/info/exclude` is no longer writable on a base branch, since it decides what counts as ignored.
 
 ## [2.4.0] - 2026-11-21
 

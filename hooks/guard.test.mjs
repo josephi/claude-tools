@@ -5,7 +5,7 @@
 // Usage: node hooks/guard.test.mjs
 
 import { mkdtemp, rm, mkdir } from 'node:fs/promises';
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -471,11 +471,43 @@ try {
     assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(`cat > ${join(work, 'backups', 'x.tgz')}`) }, work), null);
   });
 
-  step('a tracked or unignored file next to it is still denied', () => {
-    assert.equal(run({ hook_event_name: 'PreToolUse', ...write('Edit', join(work, '.env.example')) }, work)
-      ?.hookSpecificOutput?.permissionDecision, 'deny');
-    assert.equal(run({ hook_event_name: 'PreToolUse', ...bash(`echo x > ${join(work, 'a.txt')}`) }, work)
-      ?.hookSpecificOutput?.permissionDecision, 'deny');
+  const denied = (payload) => run({ hook_event_name: 'PreToolUse', ...payload }, work)
+    ?.hookSpecificOutput?.permissionDecision === 'deny';
+
+  step('an unignored file next to it is still denied', () => {
+    assert.ok(denied(write('Edit', join(work, '.env.example'))));
+    assert.ok(denied(bash(`echo x > ${join(work, 'a.txt')}`)));
+  });
+
+  step('a file that matches .gitignore but was force-added is tracked, so denied', () => {
+    writeFileSync(join(work, 'backups-forced.env.local'), 'x');
+    writeFileSync(join(work, '.gitignore'), '.env.local\nbackups/\n*.env.local\n');
+    G(['add', '-f', 'backups-forced.env.local'], work);
+    G(['commit', '-q', '-m', 'force-add an ignored file'], work);
+    assert.ok(denied(write('Edit', join(work, 'backups-forced.env.local'))));
+    assert.ok(denied(bash(`sed -i s/x/y/ ${join(work, 'backups-forced.env.local')}`)));
+  });
+
+  step('a symlink in an ignored folder that points at a tracked file is denied', () => {
+    mkdirSync(join(work, 'backups'), { recursive: true });
+    writeFileSync(join(work, 'app.js'), 'tracked');
+    G(['add', 'app.js'], work);
+    G(['commit', '-q', '-m', 'tracked app'], work);
+    symlinkSync('../app.js', join(work, 'backups', 'link'));
+    assert.ok(denied(write('Edit', join(work, 'backups', 'link'))));
+    assert.ok(denied(bash(`echo x > ${join(work, 'backups', 'link')}`)));
+  });
+
+  step('mv of a tracked file into an ignored folder is denied (the source is written too)', () => {
+    assert.ok(denied(bash(`mv ${join(work, 'app.js')} ${join(work, 'backups')}/`)));
+    assert.ok(denied(bash(`rsync --remove-source-files ${join(work, 'app.js')} ${join(work, 'backups')}/`)));
+    assert.equal(denied(bash(`cp ${join(work, 'app.js')} ${join(work, 'backups')}/`)), false, 'cp only reads its source');
+  });
+
+  step('.git/info/exclude is not writable on a base branch: it decides what is ignored', () => {
+    assert.ok(denied(write('Edit', join(work, '.git', 'info', 'exclude'))));
+    assert.ok(denied(bash(`echo 'src/*' >> ${join(work, '.git', 'info', 'exclude')}`)));
+    assert.equal(denied(write('Edit', join(work, '.git', 'config'))), false);
   });
 
   step('escape hatch unblocks master', () => {
