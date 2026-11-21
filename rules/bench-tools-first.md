@@ -19,6 +19,7 @@ The `route` hook already nudges toward the right tool when a prompt matches its 
 
 - PR review → `code-reviewer` agent (see `pr-review-via-agent`), never an ad-hoc chat review.
 - Starting an issue → `task-start` before any code change.
+- Implementing a non-trivial issue, feature or refactor → `implement-flow` (the session coordinates architect, scrutinizer, tester, developer and reviewer; it does not code itself).
 - GitHub Issue creation / breakdown → `scrum-master` agent, or `business-analyst` from a PRD.
 - Writing tests → `qa-automation`, following `testing-conventions`.
 - Backend implementation / refactor → `senior-developer`.

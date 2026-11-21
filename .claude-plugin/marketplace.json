@@ -10,7 +10,7 @@
       "name": "bench",
       "source": ".",
       "description": "Rules, skills, agents and hooks for personal development work — execution style, git-per-task with a base-branch guard, GitHub Issues and PR flow, testing and logging conventions, project-aware gcloud/GitHub/Chrome helpers, and prompt-time routing into the right specialist tool.",
-      "version": "2.3.0",
+      "version": "2.4.0",
       "category": "workflow",
       "keywords": [
         "workflow",

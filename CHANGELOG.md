@@ -11,6 +11,19 @@ The `SessionStart` hook reads this file and shows every entry between the last-i
 
 Section headings (`### Added`, `### Fixed`, …) are rendered with an emoji in the report, so keep to the Keep a Changelog set.
 
+## [2.4.0] - 2026-11-21
+
+> New `implement-flow`: the session coordinates design ⇄ scrutiny, tests that fail first, implementation, a scrutinized review debated with the developer, and learned principles, instead of coding everything itself.
+
+### Added
+
+- **`implement-flow` skill.** The coordinator dispatches every step with a fixed format (Task / Requirements / Context / Constraints, all inline), collects architecture notes and migrations in transition first, and loops until the critic has no blocking objection (three rounds, then the user). Steps: design with the user's OK; tests first, which must fail for the right reason; implement without touching those tests; draft review (migration-aware; an undeclared departure is a question, not a finding; pattern suggestions only for more than one use), scrutinized, then debated finding by finding with the developer; learn principles on the user's OK; hand back.
+- **`scrutinizer` agent.** Read-only contrarian: numbered objections graded blocking or minor, `NO BLOCKING OBJECTIONS` when clean. Checks scope creep, overengineering, architecture drift, unverified assumptions, hallucinated imports/keys/paths and copy-paste slips; on reviews, also missed and wrong findings and rubber-stamping.
+
+### Changed
+
+- **Architect, tester, developer and reviewer** carry their implement-flow rules: design toward migration targets; tests seen failing for the right reason; developer never edits the step-2 tests and verifies every import, key and path; reviewer drafts only inside the flow, treats migration direction as signal, and withdraws or holds findings in the debate.
+
 ## [2.3.0] - 2026-11-21
 
 > Reviews check architecture, anti-patterns, conventions and design-pattern opportunities, ask you before posting an architecture deviation, and apply your principles from one user-level file that grows incrementally.
