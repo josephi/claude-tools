@@ -50,6 +50,8 @@ Every principle in that list is a check on this PR. A principle scoped to anothe
 
 ### Step 1 — Gather Context
 
+Inside `implement-flow` there is no PR yet: review `git diff <base>...HEAD` on the task branch and skip the `gh pr` commands below.
+
 1. `gh pr view <num> --json title,body,author,baseRefName,headRefName,files,labels,reviews`
 2. `gh pr diff <num>` for the full unified diff.
 3. `gh pr checkout <num>` to pull the branch locally for full-file reads.
@@ -93,6 +95,8 @@ End with a **Verdict**, the summary table, a **Principles broken** line (or "non
 - your recommended answer: "keep the architecture" or "accept the deviation, and record it in the architecture doc".
 
 ### Step 4 — Present Findings and Post
+
+**Inside `implement-flow`, skip Steps 4 and 5:** nothing is posted and nobody is notified; return the draft findings to the coordinator.
 
 Present findings in chat (Verdict + summary table + each finding with location, what's wrong, why it matters, suggestion). **Then post in the same turn — do not stop for a second confirmation.** The user has already reviewed the findings when they read them; a second "want me to post?" prompt just adds friction. The one exception is **Decisions**.
 

@@ -30,8 +30,8 @@ To register the marketplace by hand instead, add to `<config-dir>/plugins/known_
 | Type | Count | Examples |
 |---|---|---|
 | Rules | 12 | execution-style, git-per-task, pr-labels, prior-art-first, code-comments |
-| Skills | 28 | task-start, task-completion, github-issues, deploy-status, gcp-logging, personal-projects |
-| Agents | 6 | code-reviewer, senior-developer, solution-architect, qa-automation |
+| Skills | 30 | task-start, task-completion, implement-flow, review-principles, github-issues, deploy-status, gcp-logging, personal-projects |
+| Agents | 7 | code-reviewer, senior-developer, solution-architect, qa-automation, scrutinizer, business-analyst, scrum-master |
 | Hooks | 6 | guard, route, nudge, session-identity, check-init, statusline |
 | MCP servers | 1 | chrome-devtools (`.mcp.json`) |
 | Bin helpers | 2 | `project-key`, `project-cfg` |

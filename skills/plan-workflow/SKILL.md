@@ -1,6 +1,6 @@
 ---
 name: plan-workflow
-description: Structured planning for non-trivial implementation tasks. TRIGGER when the user asks for a plan, says "plan this", mentions designing an approach, or when a task is large enough that starting without alignment risks wasted work (multi-file refactors, new features, architectural decisions). SKIP for typo fixes, single-line edits, or tasks with explicit step-by-step instructions from the user.
+description: Structured planning for non-trivial implementation tasks. TRIGGER when the user asks for a plan, says "plan this", mentions designing an approach, or when a task is large enough that starting without alignment risks wasted work (multi-file refactors, new features, architectural decisions). SKIP for typo fixes, single-line edits, or tasks with explicit step-by-step instructions from the user, and when the user wants the change implemented end to end with agents (that is implement-flow).
 model: opus
 tags: [audience/personal, portable/verbatim]
 ---

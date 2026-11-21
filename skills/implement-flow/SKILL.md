@@ -1,6 +1,11 @@
 ---
 name: implement-flow
-description: Coordinated multi-agent implementation of a change: design (architect ⇄ scrutinizer), tests that fail first, implementation, a scrutinized review debated with the developer, learned principles. The session only coordinates. TRIGGER when the user asks to implement an issue or feature "with the flow", "coordinate it", "do it properly with agents", or for any non-trivial feature, refactor or bug fix whose design is not already settled. SKIP for typo fixes, one-line changes, docs-only edits, or when the user asks for a quick direct change.
+description: >-
+  Coordinated multi-agent implementation of a change - design (architect and scrutinizer), tests that fail first, implementation,
+  a scrutinized review debated with the developer, learned principles. The session only coordinates. TRIGGER when the user asks
+  to implement an issue or feature "with the flow", "coordinate it", "do it properly with agents", or for a non-trivial feature,
+  refactor or bug fix whose design is not settled. SKIP for typo fixes, one-line or docs-only changes, a quick direct change,
+  or when the user only wants a plan (that is plan-workflow).
 tags: [audience/personal, portable/verbatim]
 ---
 
@@ -50,15 +55,19 @@ Architect designs → scrutinizer challenges → on blocking objections, send th
 
 ### 2. Tests first
 
-The tester turns the design into test cases and runs them. They must FAIL for the right reason: the missing behavior, not a broken setup (an import error, a missing fixture, a dead database). Read the failure output yourself before accepting it. Commit them on the task branch (`test(...)` commit, pushed).
+The tester turns the design into test cases and runs them. They must FAIL for the right reason: the missing behavior, not a broken setup (an import error, a missing fixture, a dead database). Read the failure output yourself before accepting it.
+
+Then record them:
+- Commit them on the task branch (`test(...)`, pushed), unless the project gates every commit on passing tests (a pre-commit test hook, or a rule like "run the unit tests before every commit"). There, never bypass the gate: keep them uncommitted until step 3 passes, then commit them first, as their own commit, before the implementation.
+- Either way, keep a fingerprint of the tests as the tester left them: `sha256sum <test files>`. Every later tester fix refreshes it.
 
 ### 3. Implement
 
-The developer implements until the step-2 tests and the existing suite pass. The developer must not edit the step-2 tests to make them pass. If a test is wrong, the developer says why and the tester fixes it (then back to the developer). Check `git diff` of the step-2 test files after the developer finishes; any change there that the tester did not make sends the work back.
+The developer implements until the step-2 tests and the existing suite pass. The developer must not edit the step-2 tests to make them pass. If a test is wrong, the developer says why and the tester fixes it (then back to the developer). After the developer finishes, compare the step-2 test files with the fingerprint (`sha256sum -c`); any change the tester did not make sends the work back.
 
 ### 4. Review
 
-a. The reviewer reviews the branch diff as a **draft: nothing is posted**.
+a. The reviewer reviews the branch diff (`git diff <base>...HEAD`; there is no PR yet) as a **draft: nothing is posted**.
    - A change that moves toward a declared migration target is correct: approve it with confidence.
    - New code that uses a pattern being migrated away from is a Warning.
    - An undeclared departure from the architecture is NOT a finding: ask the user whether to accept it, and if they do, offer to record it in `CLAUDE.md` or memory.
@@ -68,13 +77,13 @@ b. Scrutinizer ⇄ reviewer loop on the review itself (missed findings, wrong fi
 
 c. Reviewer ⇄ developer debate. For each finding, the developer ACCEPTS it (and proposes the fix) or DISPUTES it with evidence: a test, a real payload, a documented convention. For each dispute, the reviewer WITHDRAWS the finding or HOLDS it with a counter-argument. At most 3 rounds per finding, then it goes to the user with both positions, one line each.
 
-d. The developer applies the accepted and held fixes, the tests run again, and the reviewer re-checks only the changed lines.
+d. The developer applies the accepted fixes, and the held ones the user upheld (a held finding the developer still disputes after three rounds is the user's call), the tests run again, and the reviewer re-checks only the changed lines.
 
 Architecture questions from 4a and escalations from 4c go to the user as one question each, with the recommended answer first.
 
 ### 5. Learn
 
-From the comments the user added, changed or rejected during this flow (in chat or on the PR), propose new review principles, or strengthen existing ones by adding the source. Show them, one line each, with the category they would go under. Write them to the principles file only on the user's OK, with the Edit tool, in the format the `review-principles` skill keeps.
+From the comments the user added, changed or rejected during this flow (in chat: the design OK, the escalations, any correction), propose new review principles, or strengthen existing ones by adding the source. Show them, one line each, with the category they would go under. Write them to the principles file only on the user's OK, with the Edit tool, in the format the `review-principles` skill keeps.
 
 ### 6. Hand back
 

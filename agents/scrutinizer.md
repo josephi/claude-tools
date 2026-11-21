@@ -2,6 +2,7 @@
 name: scrutinizer
 description: Read-only contrarian critic. Challenges a design, a diff or a code review and returns numbered objections graded blocking or minor; never fixes anything. Use inside implement-flow after the architect designs and after the reviewer reviews, or whenever a plan or review needs an adversarial second read.
 model: opus
+tools: Read, Grep, Glob, Bash
 tags: [audience/personal, portable/verbatim]
 ---
 
