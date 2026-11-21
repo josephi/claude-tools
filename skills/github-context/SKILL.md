@@ -30,7 +30,7 @@ Keep this schema stable so future GitHub skills can rely on the field names.
 ## Resolution (which project am I in?)
 
 1. If the caller passed an explicit key, use it.
-2. Otherwise: `REPO=$(git rev-parse --show-toplevel 2>/dev/null | xargs -I{} basename {})`
+2. Otherwise: `REPO=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" | xargs -I{} basename {})` — the main checkout's name, so a worktree under `.claude/worktrees/` resolves to its repo
 3. Look up in `projects`:
    - exact key match (`projects.<REPO>`)
    - any `projects.<key>.match` glob that matches `$REPO`
@@ -40,7 +40,7 @@ Helper:
 
 ```sh
 project_key() {
-  local repo=${1:-$(git rev-parse --show-toplevel 2>/dev/null | xargs -I{} basename {} 2>/dev/null)}
+  local repo=${1:-$(dirname "$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" | xargs -I{} basename {} 2>/dev/null)}
   python3 - "$repo" <<'PY'
 import json, os, sys, fnmatch
 cfg = json.load(open(os.path.expanduser("~/.claude-personal/settings.local.json")))

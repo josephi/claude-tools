@@ -10,12 +10,12 @@
 // repos have no such file; the equivalent registry is `projects.<key>` in
 // <config-dir>/settings.local.json, which the personal-projects skill writes and
 // github-context / gcloud-auth / deploy-status read. Resolution mirrors
-// bin/project-key (exact key, then `match` globs against the repo basename) but
+// bin/project-key (exact key, then `match` globs against the main checkout's basename) but
 // is done natively rather than by shelling out to it, because this runs on every
 // prompt and project-key spawns bash + python3.
 
 import { readFileSync, existsSync } from 'node:fs';
-import { join, basename } from 'node:path';
+import { join, basename, dirname } from 'node:path';
 import { homedir } from 'node:os';
 import { execFileSync } from 'node:child_process';
 import { env } from 'node:process';
@@ -55,6 +55,14 @@ export function currentBranch(cwd, ctx) {
 
 export function topLevel(cwd, ctx) {
   return memoized(ctx, 'toplevel', () => git(['rev-parse', '--show-toplevel'], cwd));
+}
+
+/** The main checkout behind `cwd`, even from inside a linked worktree. Null for bare repos. */
+export function mainCheckout(cwd, ctx) {
+  return memoized(ctx, 'mainCheckout', () => {
+    const common = git(['rev-parse', '--path-format=absolute', '--git-common-dir'], cwd);
+    return common && basename(common) === '.git' ? dirname(common) : null;
+  });
 }
 
 export function upstreamRef(cwd, ctx) {
@@ -141,12 +149,13 @@ function globToRe(glob) {
 }
 
 /**
- * Personal-project key for this repo — exact key match on the repo basename,
+ * Personal-project key for this repo — exact key match on the main checkout's basename
+ * (so a worktree under .claude/worktrees resolves to its repo),
  * then any `match` glob. Mirrors bin/project-key. Null when nothing matches.
  */
 export function projectKey(cwd, ctx) {
   return memoized(ctx, 'projectKey', () => {
-    const root = topLevel(cwd, ctx) || cwd;
+    const root = mainCheckout(cwd, ctx) || topLevel(cwd, ctx) || cwd;
     const name = basename(root);
     if (!name) return null;
 

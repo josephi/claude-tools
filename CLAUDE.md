@@ -159,6 +159,16 @@ Add a comment only in the rare case the code genuinely cannot be made self-expla
 2. If not, create one from the base branch (`dev`, `master`, `main` — whatever the project uses).
 3. Switch to the branch **before** making any code change.
 
+## Worktrees
+
+Every worktree lives inside the repo it belongs to, at `<repo>/.claude/worktrees/<name>`, never beside it:
+
+```sh
+git worktree add .claude/worktrees/feat-42 -b feat/42_short-goal
+```
+
+This holds in every project, even when its own docs show a sibling path like `../<repo>-feat-42`. Make sure `.claude/worktrees/` is in the project's `.gitignore`. The bench guard denies a `git worktree add` anywhere else; `BENCH_ALLOW_ANY_WORKTREE_PATH=1` lifts it.
+
 ## Between implementation and commit
 
 Stage the change, then let the user review the staged diff before the commit when the change is non-trivial. Use `git diff --cached` to review.

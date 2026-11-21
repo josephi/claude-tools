@@ -13,9 +13,9 @@ import { execFileSync } from 'node:child_process';
 import assert from 'node:assert/strict';
 
 import {
-  evaluateWrite, compactContext, isWriteTool, targetPath, isAlwaysAllowed, evaluateBashWrite,
+  evaluateWrite, compactContext, isWriteTool, targetPath, isAlwaysAllowed, evaluateBashWrite, evaluateWorktreeAdd,
 } from './guard.mjs';
-import { taskContext } from './lib/task-context.mjs';
+import { taskContext, mainCheckout } from './lib/task-context.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SCRIPT = join(HERE, 'guard.mjs');
@@ -191,6 +191,53 @@ step('omits task state outside a repo but still lists rules', () => {
 });
 
 // ---------------------------------------------------------------- end to end
+
+console.log('\nguard — worktree location');
+
+const REPO = '/p/repo';
+const bash = (command) => ({ tool_name: 'Bash', tool_input: { command } });
+const inRepo = (dir) => (dir.startsWith(REPO) ? REPO : null);
+const judgeAdd = (command, cwd = REPO, opts = {}) => evaluateWorktreeAdd(bash(command), inRepo, { cwd, ...opts });
+
+step('denies a sibling worktree and names the in-repo path', () => {
+  const res = judgeAdd('git worktree add ../repo-feat-42 -b feat/42_x');
+  assert.equal(res.permissionDecision, 'deny');
+  assert.match(res.permissionDecisionReason, /\/p\/repo\/\.claude\/worktrees\/repo-feat-42/);
+});
+
+step('denies an absolute path outside the repo', () => {
+  assert.equal(judgeAdd('git worktree add -b feat/1_x /p/repo-1').permissionDecision, 'deny');
+});
+
+step('denies through git -C and after flags with values', () => {
+  assert.equal(judgeAdd('git -C /p/repo worktree add -B feat/1_x --lock ../elsewhere', '/tmp').permissionDecision, 'deny');
+  assert.equal(judgeAdd('npm test && git worktree add --detach ../x').permissionDecision, 'deny');
+});
+
+step('allows a worktree under .claude/worktrees', () => {
+  assert.equal(judgeAdd('git worktree add .claude/worktrees/feat-42 -b feat/42_x'), null);
+  assert.equal(judgeAdd('git worktree add ../feat-1', '/p/repo/.claude/worktrees/feat-0'), null);
+});
+
+step('rejects the worktrees dir itself and a lookalike prefix', () => {
+  assert.equal(judgeAdd('git worktree add .claude/worktrees').permissionDecision, 'deny');
+  assert.equal(judgeAdd('git worktree add .claude/worktrees-old/x').permissionDecision, 'deny');
+});
+
+step('has no opinion on what it cannot judge', () => {
+  for (const c of [
+    'git worktree list',
+    'git worktree add "$DIR" -b x',
+    'git worktree add ~/wt/x',
+    'cd /tmp && git worktree add x',
+    'echo "git worktree add ../x"',
+  ]) assert.equal(judgeAdd(c), null, c);
+  assert.equal(judgeAdd('git worktree add ../x', '/elsewhere'), null);
+});
+
+step('BENCH_ALLOW_ANY_WORKTREE_PATH lifts it', () => {
+  assert.equal(judgeAdd('git worktree add ../x', REPO, { allowAnywhere: true }), null);
+});
 
 console.log('\nguard — end-to-end against a real repo');
 
@@ -431,6 +478,20 @@ try {
     for (const source of ['startup', 'resume', 'clear']) {
       assert.equal(run({ hook_event_name: 'SessionStart', source }, work), null, source);
     }
+  });
+
+  step('denies a real sibling worktree add end to end', () => {
+    const res = run({ hook_event_name: 'PreToolUse', ...bash('git worktree add ../sibling -b feat/9_x') }, work);
+    assert.equal(res.hookSpecificOutput.permissionDecision, 'deny');
+    assert.match(res.hookSpecificOutput.permissionDecisionReason, /\.claude\/worktrees\/sibling/);
+  });
+
+  step('resolves the main checkout from inside an in-repo worktree', () => {
+    const wt = join(work, '.claude', 'worktrees', 'feat-9');
+    G(['worktree', 'add', wt, '-b', 'feat/9_in-repo'], work);
+    assert.equal(mainCheckout(wt), mainCheckout(work));
+    assert.equal(run({ hook_event_name: 'PreToolUse', ...bash('git worktree add ../../../../feat-10 -b feat/10_x') }, wt)
+      .hookSpecificOutput.permissionDecision, 'deny');
   });
 
   step('fails open on malformed stdin', () => {
